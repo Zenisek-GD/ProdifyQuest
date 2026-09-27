@@ -1,0 +1,49 @@
+{
+  "name": "Dreadroot Sentinel",
+  "frameWidth": 192,
+  "frameHeight": 192,
+  "columns": 3,
+  "rows": 4,
+  "anchor": {
+    "x": 96,
+    "y": 184
+  },
+  "animations": {
+    "idle": {
+      "row": 0,
+      "durations": [
+        650,
+        550,
+        650
+      ],
+      "loop": true
+    },
+    "enraged": {
+      "row": 1,
+      "durations": [
+        320,
+        340,
+        380
+      ],
+      "loop": true
+    },
+    "hit": {
+      "row": 2,
+      "durations": [
+        160,
+        220,
+        300
+      ],
+      "loop": false
+    },
+    "defeat": {
+      "row": 3,
+      "durations": [
+        300,
+        400,
+        900
+      ],
+      "loop": false
+    }
+  }
+}

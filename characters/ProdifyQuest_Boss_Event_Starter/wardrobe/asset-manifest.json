@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "background": {
+    "width": 960,
+    "height": 720,
+    "ids": [
+      "study-room",
+      "moon-garden",
+      "sky-island"
+    ]
+  },
+  "aura": {
+    "width": 384,
+    "height": 384,
+    "ids": [
+      "starfall",
+      "leaf-dance",
+      "arcane-halo"
+    ],
+    "motion": "Scale and opacity pulse in CompanionScene.jsx"
+  },
+  "pet": {
+    "frameWidth": 128,
+    "frameHeight": 128,
+    "columns": 3,
+    "rows": 2,
+    "ids": [
+      "mint-slime",
+      "moon-owl",
+      "ember-drake"
+    ],
+    "animations": {
+      "idle": {
+        "row": 0,
+        "frames": [
+          0,
+          1,
+          2
+        ],
+        "durationsMs": [
+          1000,
+          220,
+          680
+        ],
+        "loop": true
+      },
+      "happy": {
+        "row": 1,
+        "frames": [
+          0,
+          1,
+          2
+        ],
+        "durationsMs": [
+          160,
+          200,
+          320
+        ],
+        "loop": false
+      }
+    }
+  },
+  "companion": {
+    "frameWidth": 368,
+    "frameHeight": 256,
+    "columns": 6,
+    "rows": 5,
+    "anchor": {
+      "x": 136,
+      "y": 228
+    },
+    "timingSource": "companions/companionPlayback.js"
+  }
+}

@@ -1,0 +1,457 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ProdifyQuest · Guild boss</title><style>
+*{box-sizing:border-box}body{margin:0;background:#faf7ff;color:#452d55;font:14px/1.5 system-ui,sans-serif}main{max-width:1100px;margin:auto;padding:30px 24px}header{display:flex;justify-content:space-between;gap:15px;margin-bottom:24px}.brand{font-size:11px;letter-spacing:2px;color:#946db5;font-weight:800}h1{font-size:32px;letter-spacing:-1px;line-height:1.2;margin:12px 0 8px}h2{font-size:18px;margin:20px 0 10px}p{color:#9a7eaa;margin:7px 0}.layout{display:grid;grid-template-columns:1.2fr 1fr;gap:30px}.row{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}button,select{font:inherit}button{border:0;background:#eee4f6;color:#7a509b;border-radius:11px;min-height:43px;padding:11px 15px;cursor:pointer}button.primary{background:#8654b6;color:#fff}button:disabled{opacity:.45;cursor:default}button:focus-visible,select:focus-visible{outline:3px solid #ba8de0;outline-offset:2px}select{width:100%;padding:11px;background:#fff;border:1px solid #e5d6ee;border-radius:10px;color:#704d87}canvas{display:block;width:100%;aspect-ratio:4/3;background:#33432c;border-radius:18px}.hp-heading{display:flex;justify-content:space-between;align-items:center}.hp-heading span{font-size:12px;color:#a37caa}progress{width:100%;height:12px;accent-color:#aa6abd;margin:9px 0 13px}.stats{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.stat{flex:1;background:#f0e7f8;padding:12px;border-radius:13px;min-width:95px}.stat span{display:block;color:#987aaa;font-size:11px}.stat strong{font-size:22px;color:#764497}.tabs{display:flex;gap:8px;border-bottom:1px solid #e8dced;margin-bottom:16px}.tabs button{border-radius:0;border-bottom:3px solid transparent;background:none}.tabs button[aria-selected=true]{border-color:#a073c5;font-weight:700}.item{padding:15px;background:#fff;border:2px solid #e9dff0;border-radius:15px;margin-bottom:12px}.item.equipped{border-color:#ba8cdb}.item-heading{display:flex;justify-content:space-between;gap:8px}.rarity{font-size:11px;color:#aa7fc0}.fine{font-size:12px}.task{display:flex;justify-content:space-between;gap:10px;align-items:center;border-bottom:1px solid #eaddf0;padding:10px 0}.task span{font-size:13px;color:#876b97}#message{min-height:43px;color:#875e9b;font-size:13px}.contribution{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #eadfeb}.log{font-size:12px;color:#9973a9}.victory{padding:15px;background:#f0e3fa;border-radius:15px;margin-top:14px}.badge{font-size:11px;padding:6px 10px;background:#f0e7f7;border-radius:8px;color:#916aaa}details{margin-top:25px;padding-top:18px;border-top:1px solid #e4d7ed}summary{cursor:pointer;color:#856096}footer{margin-top:25px;color:#a78ab2;font-size:12px}a{color:#8550b1}@media(max-width:760px){main{padding:22px 16px}.layout{grid-template-columns:1fr}h1{font-size:29px}}
+</style></head><body><main><header><div><div class="brand">PRODIFYQUEST · GUILD RAID</div><h1>Small tasks. Shared victory.</h1><p>Build your companion. Help your guild defeat Dreadroot.</p></div><span class="badge">OFFLINE DEMO</span></header><div class="layout"><section><div class="hp-heading"><strong>Dreadroot Sentinel</strong><span id="hp-text"></span></div><progress id="hp" max="250" value="250" aria-label="Boss health"></progress><canvas id="arena" width="720" height="540" role="img" aria-label="Animated battle arena with your companion on the left and Dreadroot on the right"></canvas><div class="stats"><div class="stat"><span>Attack</span><strong id="attack-stat"></strong></div><div class="stat"><span>Critical chance</span><strong id="crit-stat"></strong></div><div class="stat"><span>Attack charges</span><strong id="charges"></strong></div></div><p id="build" class="fine"></p><div class="row"><button id="attack" class="primary">Attack boss · 1 charge</button><button id="pause">Pause motion</button></div><div id="victory" class="victory" hidden><strong>Guild victory!</strong><p class="fine">Contribute an attack to earn one equipment chest.</p><div class="row"><button id="claim" class="primary">Claim chest</button><button id="next">Next demo event</button></div></div><p id="message" aria-live="polite"></p><h2>Guild contribution</h2><div id="contributions"></div><h2>Recent attacks</h2><div id="log"></div></section><section><div class="tabs" role="tablist" aria-label="Build and tasks"><button id="tasks-tab" aria-selected="true" role="tab">Earn charges</button><button id="inventory-tab" aria-selected="false" role="tab">Inventory & build</button></div><div id="tasks-panel"><p class="fine">Complete these sample tasks to test the battle flow. Each grants one charge, once per demo event.</p><div id="tasks"></div><div class="row"><button id="ally">Simulate guild member attack</button></div><p class="fine">Two demo allies can contribute 60 damage each.</p></div><div id="inventory-panel" hidden><label for="character">Equipped companion</label><select id="character"></select><p id="coins"></p><div class="row" id="slot-tabs"></div><div id="gear"></div><p class="fine">Equipment changes stats in this prototype. Wearable artwork is unchanged.</p></div><details><summary>Reward rules</summary><p class="fine">Boss chest: Sunbrand Focus 40%, Warden Plate 30%, Vanguard Cape 20%, Sentinel Core 10%. Duplicates award coins. Every contributing member gets one claim in a real guild event.</p><p class="fine">This preview uses local demo data, not a live guild or task account.</p></details></section></div><footer><span id="save-status"></span> · <a href="README.md">Expo setup and integration guide</a></footer></main><script>
+(function(){'use strict';
+// Edit prices, levels, chest weights and duplicate compensation here.
+const COMPANION_DEFINITIONS = [
+  {
+    "id": "apprentice-mage",
+    "name": "Apprentice Mage",
+    "rarity": "Common",
+    "accent": "#7951d4",
+    "unlock": {
+      "type": "starter"
+    },
+    "description": "Your original fire-magic study companion."
+  },
+  {
+    "id": "sprout-ranger",
+    "name": "Sprout Ranger",
+    "rarity": "Common",
+    "accent": "#4f916a",
+    "unlock": {
+      "type": "shop",
+      "coins": 400
+    },
+    "description": "A cheerful young forest ranger with warm tan skin, short auburn hair, a pointed forest-green hood, leaf-shaped shoulder cape, moss tunic, tan belt and brown boots. Small wooden shortbow carried at the side, tiny emerald leaf brooch. Compact human chibi silhouette.",
+    "attack": "charges a glowing green leaf in one palm and releases a short emerald leaf dart toward the right; keep the full ranger present in every frame"
+  },
+  {
+    "id": "copper-knight",
+    "name": "Copper Knight",
+    "rarity": "Common",
+    "accent": "#ba774a",
+    "unlock": {
+      "type": "shop",
+      "coins": 600
+    },
+    "description": "A friendly little knight in rounded burnished copper armor, a copper helmet with an open face showing warm brown skin and kind eyes, a bright turquoise scarf, small round copper shield, chunky boots. A short simple sword; approachable and cute, no realistic violence.",
+    "attack": "raises the short sword, performs one small rightward sword swipe with a short pale gold arc, then recovers; all poses fully visible"
+  },
+  {
+    "id": "sun-cleric",
+    "name": "Sun Cleric",
+    "rarity": "Uncommon",
+    "accent": "#d6a539",
+    "unlock": {
+      "type": "shop",
+      "coins": 900
+    },
+    "description": "A kind chibi healer with deep brown skin, dark curly hair in two small round puffs, ivory robe with saffron-yellow trim, small golden sun pendant and sunflower-colored short cape, brown shoes. Holds a tiny floating warm golden light in one hand; no large staff.",
+    "attack": "gathers a compact golden sunlight orb, extends hand to pulse a small golden sun spell toward the right, then recovers"
+  },
+  {
+    "id": "frost-scholar",
+    "name": "Frost Scholar",
+    "rarity": "Rare",
+    "accent": "#669bc6",
+    "unlock": {
+      "type": "level",
+      "level": 10
+    },
+    "description": "A studious chibi ice mage with warm light skin, short silver-white bob hair, blue round spectacles, midnight-blue scholar cap with a tiny pale blue crystal, powder-blue coat, white fur collar, navy leggings and boots. Small icy-blue crystal near one palm.",
+    "attack": "charges a tiny cyan crystal and releases a compact ice star toward the right before recovering"
+  },
+  {
+    "id": "storm-runner",
+    "name": "Storm Runner",
+    "rarity": "Rare",
+    "accent": "#855dd2",
+    "unlock": {
+      "type": "level",
+      "level": 20
+    },
+    "description": "An energetic chibi adventurer with deep brown skin, short fluffy white hair, purple headband with tiny yellow lightning emblem, violet short jacket, navy trousers, golden gloves and dark high-top boots. Compact yellow sparks near one glove; no huge weapons.",
+    "attack": "crouches slightly, charges one golden glove, punches forward with a short yellow lightning burst toward the right, then returns to the same spot"
+  },
+  {
+    "id": "moon-bard",
+    "name": "Moon Bard",
+    "rarity": "Epic",
+    "accent": "#9570be",
+    "unlock": {
+      "type": "level",
+      "level": 30
+    },
+    "description": "A dreamy chibi musician with warm tan skin, lavender bob hair, navy beret with tiny silver crescent pin, midnight-blue cape with pale lavender lining, lavender tunic and dark boots. Holds a very small golden-brown lute against torso; sweet friendly eyes.",
+    "attack": "strums the little lute to send two small lilac musical notes toward the right, then lowers arms to recover"
+  },
+  {
+    "id": "clockwork-scribe",
+    "name": "Clockwork Scribe",
+    "rarity": "Epic",
+    "accent": "#a58050",
+    "unlock": {
+      "type": "level",
+      "level": 40
+    },
+    "description": "A lovable chibi brass robot scholar, round bronze head with two glowing cyan eyes and a small friendly mouth, tiny copper antenna, navy waistcoat, brass jointed arms, chunky brass boots. Small cream paper tab tucked in belt. No human face, a compact friendly automaton.",
+    "attack": "charges a tiny cyan cog between its brass hands, extends one hand to send a short teal gear bolt to the right, then recovers"
+  },
+  {
+    "id": "prism-fox",
+    "name": "Prism Fox",
+    "rarity": "Rare",
+    "accent": "#539cba",
+    "unlock": {
+      "type": "boss_chest",
+      "weight": 60,
+      "duplicateCoins": 100
+    },
+    "description": "A friendly bipedal chibi magical fox with turquoise fur, a cream muzzle and belly, huge expressive dark eyes, lavender inner ears, one short fluffy tail with lilac tip tucked close to body, tiny purple shoulder cape and small clear crystal pendant. Two paws and two feet, cute compact animal silhouette.",
+    "attack": "cups a tiny rainbow crystal glow between paws, extends paws to send a compact prismatic star to the right, then recovers"
+  },
+  {
+    "id": "ember-dragonling",
+    "name": "Ember Dragonling",
+    "rarity": "Epic",
+    "accent": "#d87551",
+    "unlock": {
+      "type": "boss_chest",
+      "weight": 30,
+      "duplicateCoins": 250
+    },
+    "description": "An adorable upright baby dragon with coral-red scales, warm cream belly and muzzle, small golden horns, large dark friendly eyes, two tiny plum-colored bat wings held close, short curled tail kept close, chunky clawed feet. Cute rounded chibi body, tiny navy scarf.",
+    "attack": "inhales slightly, puffs one compact golden-orange flame to the right from its mouth, then closes mouth and recovers; keep the full dragon in EVERY frame"
+  },
+  {
+    "id": "astral-guardian",
+    "name": "Astral Guardian",
+    "rarity": "Legendary",
+    "accent": "#696db9",
+    "unlock": {
+      "type": "boss_chest",
+      "weight": 10,
+      "duplicateCoins": 500
+    },
+    "description": "A majestic but friendly chibi celestial guardian wearing dark indigo armor with thin gold star trim, a rounded indigo helmet with two large glowing cyan friendly eyes, a small gold star on forehead, short ivory cape, chunky armored boots. One small azure star orb floats above palm. No giant halo or wings.",
+    "attack": "gathers an azure star between armored hands, extends one palm releasing a small blue-and-gold star pulse toward the right, then returns to neutral"
+  }
+];
+
+// Sample economy: edit prices, levels and weights here.
+const ITEMS = [
+  { id: 'study-room', name: 'Sunlit Study', category: 'background', rarity: 'Common', description: 'A quiet corner for your next focus session.', unlock: { type: 'starter' } },
+  { id: 'moon-garden', name: 'Moon Garden', category: 'background', rarity: 'Rare', description: 'A peaceful terrace beneath the stars.', unlock: { type: 'shop', coins: 650 } },
+  { id: 'sky-island', name: 'Sky Sanctuary', category: 'background', rarity: 'Epic', description: 'A place above the clouds, earned with progress.', unlock: { type: 'level', level: 20 } },
+  { id: 'mint-slime', name: 'Mint Slime', category: 'pet', rarity: 'Common', description: 'A tiny sprout with a big happy bounce.', unlock: { type: 'starter' } },
+  { id: 'moon-owl', name: 'Moon Owl', category: 'pet', rarity: 'Rare', description: 'Your little late-night study buddy.', unlock: { type: 'level', level: 10 } },
+  { id: 'ember-drake', name: 'Ember Drake', category: 'pet', rarity: 'Epic', description: 'A small dragon who celebrates every win.', unlock: { type: 'boss', weight: 35, duplicateCoins: 200 } },
+  { id: 'leaf-dance', name: 'Leaf Dance', category: 'aura', rarity: 'Uncommon', description: 'Fresh green leaves sway around your companion.', unlock: { type: 'shop', coins: 350 } },
+  { id: 'starfall', name: 'Starfall', category: 'aura', rarity: 'Rare', description: 'A gentle shimmer of gold and lilac.', unlock: { type: 'boss', weight: 50, duplicateCoins: 100 } },
+  { id: 'arcane-halo', name: 'Arcane Halo', category: 'aura', rarity: 'Legendary', description: 'A brilliant ring of celestial magic.', unlock: { type: 'boss', weight: 15, duplicateCoins: 300 } },
+];
+const ITEMS_BY_ID = Object.fromEntries(ITEMS.map(item => [item.id, item]));
+const SLOT_FOR_CATEGORY = { background: 'backgroundId', pet: 'petId', aura: 'auraId' };
+function unlockLabel(item) {
+  const u = item.unlock;
+  if (u.type === 'shop') return `${u.coins} coins`;
+  if (u.type === 'level') return `Level ${u.level}`;
+  if (u.type === 'boss') return 'Boss chest';
+  return 'Starter gift';
+}
+
+
+const COMPANION_IDS = COMPANION_DEFINITIONS.map(c => c.id);
+const DEFAULT_OUTFIT = { companionId: 'frost-scholar', backgroundId: 'study-room', petId: 'mint-slime', auraId: null };
+const STARTER_IDS = ITEMS.filter(i => i.unlock.type === 'starter').map(i => i.id);
+const SLOT_ENTRIES = Object.entries(SLOT_FOR_CATEGORY);
+const unique = values => [...new Set(values)];
+
+function createDemoProfile() {
+  // All companions are available here for compatibility previews. Your production
+  // profile must provide the player's actual ownedCompanionIds.
+  return { schemaVersion: 1, coins: 1600, level: 1, ownedItemIds: [...STARTER_IDS], ownedCompanionIds: [...COMPANION_IDS], equipped: { ...DEFAULT_OUTFIT }, presets: [], claimedRaidIds: [] };
+}
+function validateOutfit(profile, outfit) {
+  if (!outfit || !COMPANION_IDS.includes(outfit.companionId) || !profile.ownedCompanionIds.includes(outfit.companionId)) throw new Error('Unlock this companion before equipping it.');
+  const clean = { companionId: outfit.companionId };
+  for (const [category, slot] of SLOT_ENTRIES) {
+    const id = outfit[slot];
+    if (id == null && category !== 'background') { clean[slot] = null; continue; }
+    const item = ITEMS_BY_ID[id];
+    if (!item || item.category !== category) throw new Error(`Choose a valid ${category}.`);
+    if (!profile.ownedItemIds.includes(id)) throw new Error(`Unlock ${item.name} before equipping this look.`);
+    clean[slot] = id;
+  }
+  return clean;
+}
+function equipOutfit(profile, outfit) { return { ...profile, equipped: validateOutfit(profile, outfit) }; }
+function buyItem(profile, id) {
+  const item = ITEMS_BY_ID[id];
+  if (!item || item.unlock.type !== 'shop') throw new Error('This item cannot be bought in the coin shop.');
+  if (profile.ownedItemIds.includes(id)) throw new Error('You already own this item.');
+  if (!Number.isSafeInteger(profile.coins) || profile.coins < item.unlock.coins) throw new Error('You need more coins for this item.');
+  return { ...profile, coins: profile.coins - item.unlock.coins, ownedItemIds: [...profile.ownedItemIds, id] };
+}
+function grantLevelItems(profile, level) {
+  if (!Number.isSafeInteger(level) || level < profile.level || level < 1) throw new Error('The new level must not be below the current level.');
+  const unlocked = ITEMS.filter(i => i.unlock.type === 'level' && level >= i.unlock.level && !profile.ownedItemIds.includes(i.id));
+  return { profile: { ...profile, level, ownedItemIds: unique([...profile.ownedItemIds, ...unlocked.map(i => i.id)]) }, unlocked };
+}
+function bossOdds() {
+  const pool = ITEMS.filter(i => i.unlock.type === 'boss');
+  const total = pool.reduce((sum, i) => sum + i.unlock.weight, 0);
+  if (!(total > 0) || pool.some(i => !Number.isFinite(i.unlock.weight) || i.unlock.weight <= 0)) throw new Error('Invalid boss reward weights.');
+  return pool.map(item => ({ item, probability: item.unlock.weight / total }));
+}
+function claimCosmeticChest(profile, { raidId, eligible, defeated, randomValue }) {
+  if (typeof raidId !== 'string' || !raidId.trim()) throw new Error('A raid ID is required.');
+  if (!eligible || !defeated) throw new Error('Complete an eligible guild boss victory first.');
+  if (profile.claimedRaidIds.includes(raidId)) return { profile, reward: { type: 'already-claimed' } };
+  if (!Number.isFinite(randomValue) || randomValue < 0 || randomValue >= 1) throw new Error('The random value must be between zero (inclusive) and one (exclusive).');
+  const odds = bossOdds(); let cursor = 0, chosen = odds[odds.length - 1].item;
+  for (const entry of odds) { cursor += entry.probability; if (randomValue < cursor) { chosen = entry.item; break; } }
+  const duplicate = profile.ownedItemIds.includes(chosen.id);
+  return {
+    profile: { ...profile, coins: profile.coins + (duplicate ? chosen.unlock.duplicateCoins : 0), ownedItemIds: duplicate ? profile.ownedItemIds : [...profile.ownedItemIds, chosen.id], claimedRaidIds: [...profile.claimedRaidIds, raidId] },
+    reward: { type: duplicate ? 'coins' : 'item', item: chosen, coins: duplicate ? chosen.unlock.duplicateCoins : 0 },
+  };
+}
+function savePreset(profile, slot, name, outfit) {
+  if (!Number.isInteger(slot) || slot < 0 || slot > 2) throw new Error('Choose favorite slot 1, 2 or 3.');
+  const clean = validateOutfit(profile, outfit);
+  const presets = profile.presets.filter(p => p.slot !== slot);
+  presets.push({ slot, name: String(name || `Favorite ${slot + 1}`).trim().slice(0, 32) || `Favorite ${slot + 1}`, outfit: clean });
+  return { ...profile, presets: presets.sort((a,b) => a.slot - b.slot) };
+}
+function loadPreset(profile, slot) {
+  const preset = profile.presets.find(p => p.slot === slot);
+  if (!preset) throw new Error('Save an outfit in this favorite slot first.');
+  return equipOutfit(profile, preset.outfit);
+}
+function restoreProfile(value) {
+  // Defensive local hydration, NOT a security boundary for real rewards.
+  if (!value || value.schemaVersion !== 1) throw new Error('This saved wardrobe uses an unsupported format.');
+  const base = createDemoProfile();
+  const safeList = (v, allowed) => unique(Array.isArray(v) ? v.filter(x => allowed.includes(x)) : []);
+  const ownedCompanionIds = safeList(value.ownedCompanionIds, COMPANION_IDS);
+  const profile = { ...base,
+    coins: Number.isSafeInteger(value.coins) && value.coins >= 0 ? value.coins : 0,
+    level: Number.isSafeInteger(value.level) && value.level >= 1 ? value.level : 1,
+    ownedItemIds: unique([...STARTER_IDS, ...safeList(value.ownedItemIds, ITEMS.map(i => i.id))]),
+    ownedCompanionIds: ownedCompanionIds.length ? ownedCompanionIds : ['apprentice-mage'],
+    claimedRaidIds: unique(Array.isArray(value.claimedRaidIds) ? value.claimedRaidIds.filter(x => typeof x === 'string' && x.length > 0) : []),
+    presets: [],
+  };
+  profile.equipped = { ...DEFAULT_OUTFIT, companionId: profile.ownedCompanionIds[0] };
+  try { profile.equipped = validateOutfit(profile, value.equipped); } catch { /* keep safe defaults */ }
+  for (const p of Array.isArray(value.presets) ? value.presets : []) {
+    try { profile.presets = savePreset(profile, p.slot, p.name, p.outfit).presets; } catch { /* ignore unusable preset */ }
+  }
+  return grantLevelItems(profile, profile.level).profile;
+}
+
+// Example balance values. Adjust after playtesting your task economy.
+const BOSS = { id: 'dreadroot', name: 'Dreadroot Sentinel', maxHp: 250, defense: 20, enrageAt: 0.4 };
+const RARITY_MULTIPLIER = { Common: 1, Uncommon: 1.05, Rare: 1.10, Epic: 1.15, Legendary: 1.20 };
+const CHARACTER_BASE = {
+ 'apprentice-mage': { attack: 22, critChance: .06 }, 'sprout-ranger': { attack: 21, critChance: .10 },
+ 'copper-knight': { attack: 24, critChance: .04 }, 'sun-cleric': { attack: 22, critChance: .07 },
+ 'frost-scholar': { attack: 23, critChance: .08 }, 'storm-runner': { attack: 22, critChance: .12 },
+ 'moon-bard': { attack: 22, critChance: .10 }, 'clockwork-scribe': { attack: 24, critChance: .06 },
+ 'prism-fox': { attack: 21, critChance: .12 }, 'ember-dragonling': { attack: 24, critChance: .07 },
+ 'astral-guardian': { attack: 24, critChance: .08 },
+};
+const GEAR = [
+ {id:'practice-focus',name:'Practice Focus',slot:'weapon',rarity:'Common',attack:5,unlock:'starter'},
+ {id:'focus-staff',name:'Focus Staff',slot:'weapon',rarity:'Rare',attack:10,unlock:'shop',price:180},
+ {id:'storm-sigil',name:'Storm Sigil',slot:'weapon',rarity:'Rare',attack:6,critChance:.06,unlock:'shop',price:250},
+ {id:'sunbrand',name:'Sunbrand Focus',slot:'weapon',rarity:'Epic',attack:14,unlock:'boss',weight:40,duplicateCoins:100},
+ {id:'apprentice-robe',name:'Apprentice Robe',slot:'armor',rarity:'Common',attack:4,unlock:'starter'},
+ {id:'scholar-vest',name:'Scholar Vest',slot:'armor',rarity:'Uncommon',attack:3,critChance:.05,unlock:'shop',price:140},
+ {id:'warden-plate',name:'Warden Plate',slot:'armor',rarity:'Epic',attack:12,unlock:'boss',weight:30,duplicateCoins:100},
+ {id:'linen-cape',name:'Linen Cape',slot:'cape',rarity:'Common',critChance:.02,unlock:'starter'},
+ {id:'nightweave',name:'Nightweave Cape',slot:'cape',rarity:'Rare',critChance:.08,unlock:'shop',price:200},
+ {id:'vanguard-cape',name:'Vanguard Cape',slot:'cape',rarity:'Epic',attack:6,critChance:.04,unlock:'boss',weight:20,duplicateCoins:120},
+ {id:'wooden-charm',name:'Wooden Charm',slot:'trinket',rarity:'Common',critChance:.03,unlock:'starter'},
+ {id:'scholar-lens',name:'Scholar Lens',slot:'trinket',rarity:'Rare',critMultiplier:.15,unlock:'shop',price:160},
+ {id:'sentinel-core',name:'Sentinel Core',slot:'trinket',rarity:'Legendary',critChance:.02,critMultiplier:.30,unlock:'boss',weight:10,duplicateCoins:200},
+];
+const GEAR_BY_ID=Object.fromEntries(GEAR.map(i=>[i.id,i]));
+const GEAR_SLOTS=['weapon','armor','cape','trinket'];
+const DEMO_TASKS=[
+ {id:'priorities',title:'Plan today’s three priorities'}, {id:'focus',title:'Finish one focus session'},
+ {id:'assignment',title:'Complete an assignment step'}, {id:'review',title:'Review your study notes'},
+ {id:'organize',title:'Organize tomorrow’s materials'}, {id:'reflection',title:'Write a short daily reflection'},
+];
+function gearSummary(item){return [item.attack?`+${item.attack} ATK`:null,item.critChance?`+${Math.round(item.critChance*100)}% crit`:null,item.critMultiplier?`+${Math.round(item.critMultiplier*100)}% crit damage`:null].filter(Boolean).join(' · ')}
+
+const companions=Object.fromEntries(COMPANION_DEFINITIONS.map(c=>[c.id,c]));
+const newRaid=n=>({id:`demo-raid-${n}`,number:n,hp:BOSS.maxHp,maxHp:BOSS.maxHp,revision:0,contributions:{you:0},results:{},reward:null});
+function createBattleDemo(){return{schemaVersion:1,wardrobe:createDemoProfile(),charges:0,completedTaskIds:[],ownedGearIds:GEAR.filter(g=>g.unlock==='starter').map(g=>g.id),equippedGear:{weapon:'practice-focus',armor:'apprentice-robe',cape:'linen-cape',trinket:'wooden-charm'},raid:newRaid(1)}}
+function getBuild(model){
+ const id=model.wardrobe.equipped.companionId,c=companions[id],base=CHARACTER_BASE[id];if(!c||!base)throw new Error('Unknown companion.');
+ const gear=GEAR_SLOTS.map(slot=>GEAR_BY_ID[model.equippedGear[slot]]).filter(Boolean);
+ const level=model.wardrobe.level,rarityMultiplier=RARITY_MULTIPLIER[c.rarity]||1;
+ const attack=Math.floor((base.attack+2*(level-1))*rarityMultiplier)+gear.reduce((s,g)=>s+(g.attack||0),0);
+ const critChance=Math.min(.5,base.critChance+gear.reduce((s,g)=>s+(g.critChance||0),0));
+ const critMultiplier=Math.min(2.5,1.5+gear.reduce((s,g)=>s+(g.critMultiplier||0),0));
+ return{companionId:id,name:c.name,rarity:c.rarity,level,baseAttack:base.attack,rarityMultiplier,attack,critChance,critMultiplier,normalDamage:Math.max(1,Math.floor(attack*100/(100+BOSS.defense))),criticalDamage:Math.max(1,Math.floor(attack*100/(100+BOSS.defense)*critMultiplier))};
+}
+function completeDemoTask(model,taskId){
+ if(!DEMO_TASKS.some(t=>t.id===taskId))throw new Error('Unknown demo task.');
+ const key=`${model.raid.id}:${taskId}`;if(model.completedTaskIds.includes(key))return model;
+ if(model.raid.hp===0)throw new Error('Start a new demo event first.');
+ return{...model,charges:model.charges+1,completedTaskIds:[...model.completedTaskIds,key]};
+}
+function equipGear(model,id){const item=GEAR_BY_ID[id];if(!item||!model.ownedGearIds.includes(id))throw new Error('You must own this item to equip it.');return{...model,equippedGear:{...model.equippedGear,[item.slot]:id}}}
+function buyGear(model,id){const item=GEAR_BY_ID[id];if(!item||item.unlock!=='shop')throw new Error('This item cannot be bought.');if(model.ownedGearIds.includes(id))throw new Error('This item is already in your inventory.');if(model.wardrobe.coins<item.price)throw new Error('Not enough coins.');return{...model,wardrobe:{...model.wardrobe,coins:model.wardrobe.coins-item.price},ownedGearIds:[...model.ownedGearIds,id]}}
+function validateRoll(roll){if(!Number.isFinite(roll)||roll<0||roll>=1)throw new Error('Random roll must be in [0,1).')}
+function applyHit(model,{attackId,actorId,actorName,companionId,damage,critical,build,chargeCost}){
+ const appliedDamage=Math.min(model.raid.hp,damage);
+ const result={attackId,raidId:model.raid.id,actorId,actorName,companionId,damage:appliedDamage,rolledDamage:damage,critical,build,beforeHp:model.raid.hp,afterHp:model.raid.hp-appliedDamage,revision:model.raid.revision+1,chargesAfter:model.charges-chargeCost};
+ const raid={...model.raid,hp:result.afterHp,revision:result.revision,contributions:{...model.raid.contributions,[actorId]:(model.raid.contributions[actorId]||0)+appliedDamage},results:{...model.raid.results,[attackId]:result}};
+ return{model:{...model,charges:result.chargesAfter,raid},result,replayed:false};
+}
+function attackBoss(model,{attackId,raidId,roll}){
+ if(typeof attackId!=='string'||!attackId.trim())throw new Error('An attack ID is required.');
+ if(raidId!==model.raid.id)throw new Error('This boss event has changed.');
+ if(Object.prototype.hasOwnProperty.call(model.raid.results,attackId))return{model,result:model.raid.results[attackId],replayed:true};
+ if(model.raid.hp<=0)throw new Error('The guild has already defeated this boss.');
+ if(model.charges<1)throw new Error('Complete a task to earn an attack charge.');
+ validateRoll(roll);const build=getBuild(model),critical=roll<build.critChance;
+ return applyHit(model,{attackId,actorId:'you',actorName:'You',companionId:build.companionId,damage:critical?build.criticalDamage:build.normalDamage,critical,build,chargeCost:1});
+}
+function simulateGuildHit(model){
+ if(model.raid.hp<=0)throw new Error('The boss is already defeated.');
+ const index=[1,2].find(i=>!model.raid.results[`ally-${i}`]);if(!index)throw new Error('Both demo guild members have contributed.');
+ return applyHit(model,{attackId:`ally-${index}`,actorId:`ally-${index}`,actorName:`Demo ally ${index}`,companionId:index===1?'copper-knight':'storm-runner',damage:60,critical:false,build:null,chargeCost:0});
+}
+function claimBossLoot(model,roll){
+ if(model.raid.reward)return{model,reward:model.raid.reward,replayed:true};
+ if(model.raid.hp>0)throw new Error('Defeat the boss first.');
+ if(!(model.raid.contributions.you>0))throw new Error('Contribute at least one attack to earn this demo chest.');
+ validateRoll(roll);const pool=GEAR.filter(g=>g.unlock==='boss'),total=pool.reduce((s,g)=>s+g.weight,0);let cursor=0,item=pool[pool.length-1];
+ for(const g of pool){cursor+=g.weight/total;if(roll<cursor){item=g;break}}
+ const duplicate=model.ownedGearIds.includes(item.id),reward={type:duplicate?'coins':'gear',gearId:item.id,name:item.name,coins:duplicate?item.duplicateCoins:0};
+ return{model:{...model,ownedGearIds:duplicate?model.ownedGearIds:[...model.ownedGearIds,item.id],wardrobe:{...model.wardrobe,coins:model.wardrobe.coins+reward.coins},raid:{...model.raid,reward}},reward,replayed:false};
+}
+function nextDemoRaid(model){if(model.raid.hp>0)throw new Error('Finish this boss event first.');if(model.raid.contributions.you>0&&!model.raid.reward)throw new Error('Claim your chest before starting another event.');return{...model,raid:newRaid(model.raid.number+1)}}
+function restoreBattleModel(raw){
+ if(!raw||raw.schemaVersion!==1)throw new Error('Unsupported saved battle format.');
+ const integer=(v,min=0)=>Number.isSafeInteger(v)&&v>=min;
+ if(!integer(raw.charges)||!Array.isArray(raw.completedTaskIds)||!Array.isArray(raw.ownedGearIds))throw new Error('Invalid player data.');
+ const model={...raw,wardrobe:restoreProfile(raw.wardrobe),ownedGearIds:[...new Set(raw.ownedGearIds.filter(id=>GEAR_BY_ID[id]))],completedTaskIds:[...new Set(raw.completedTaskIds.filter(id=>typeof id==='string'))],equippedGear:{}};
+ for(const slot of GEAR_SLOTS){const id=raw.equippedGear?.[slot];if(!model.ownedGearIds.includes(id)||GEAR_BY_ID[id]?.slot!==slot)throw new Error('Invalid saved equipment.');model.equippedGear[slot]=id}
+ const r=raw.raid;
+ if(!r||!integer(r.number,1)||r.id!==`demo-raid-${r.number}`||r.maxHp!==BOSS.maxHp||!integer(r.hp)||r.hp>r.maxHp||!integer(r.revision)||!r.results||typeof r.results!=='object'||!r.contributions||typeof r.contributions!=='object')throw new Error('Invalid boss data.');
+ if(Object.values(r.contributions).some(v=>!integer(v))||Object.values(r.contributions).reduce((a,b)=>a+b,0)!==r.maxHp-r.hp)throw new Error('Invalid contribution history.');
+ for(const [id,result] of Object.entries(r.results)){if(!result||result.attackId!==id||result.raidId!==r.id||!companions[result.companionId]||!integer(result.damage)||!integer(result.afterHp)||result.afterHp>r.maxHp||!integer(result.revision,1)||result.revision>r.revision)throw new Error('Invalid saved attack history.');}
+ if(r.reward&&(!GEAR_BY_ID[r.reward.gearId]||r.hp!==0))throw new Error('Invalid saved reward.');
+ return model;
+}
+
+// Pure timing logic. No React Native or third-party dependencies.
+const SHEET = { frameWidth: 368, frameHeight: 256, columns: 6, rows: 5 };
+
+const ANIMATIONS = {
+  idle: { row: 0, durations: [600, 220, 140, 260, 220, 640] },
+  wave: { row: 1, durations: [200, 180, 200, 200, 180, 340] },
+  study: { row: 2, durations: [650, 350, 140, 300, 350, 500] },
+  celebrate: { row: 3, durations: [220, 120, 140, 220, 140, 500] },
+  attack: { row: 4, durations: [240, 200, 200, 130, 230, 360] },
+};
+
+const ACTIONS = ['wave', 'celebrate', 'attack'];
+
+function createPlayback(restingState = 'idle') {
+  return { restingState: restingState === 'study' ? 'study' : 'idle', queue: [], frame: 0, elapsed: 0 };
+}
+
+function getPose(playback) {
+  return { animation: playback.queue[0] || playback.restingState, frame: playback.frame };
+}
+
+function startActions(playback, actionOrSequence) {
+  const queue = (Array.isArray(actionOrSequence) ? [...actionOrSequence] : [actionOrSequence]).map(action => action === 'cast' ? 'attack' : action);
+  if (!queue.length || queue.some(action => !ACTIONS.includes(action))) {
+    throw new Error('Companion.play expects wave, celebrate, attack, or an array of these actions.');
+  }
+  // A new call deliberately replaces the current action sequence.
+  return { ...playback, queue, frame: 0, elapsed: 0 };
+}
+
+function setRestingState(playback, restingState) {
+  const next = restingState === 'study' ? 'study' : 'idle';
+  if (next === playback.restingState) return playback;
+  if (!playback.queue.length) return createPlayback(next);
+  return { ...playback, restingState: next };
+}
+
+function advancePlayback(playback, deltaMs) {
+  if (!Number.isFinite(deltaMs) || deltaMs < 0) {
+    throw new Error('deltaMs must be a finite, non-negative number.');
+  }
+  const next = { ...playback, queue: [...playback.queue], elapsed: playback.elapsed + deltaMs };
+  const completed = [];
+  for (;;) {
+    const animation = next.queue[0] || next.restingState;
+    const durations = ANIMATIONS[animation].durations;
+    if (next.elapsed < durations[next.frame]) break;
+    next.elapsed -= durations[next.frame];
+    next.frame += 1;
+    if (next.frame === durations.length) {
+      next.frame = 0;
+      if (next.queue.length) completed.push(next.queue.shift());
+      // Fast-forward complete idle/study loops without creating callbacks.
+      if (!next.queue.length) {
+        const loopDuration = ANIMATIONS[next.restingState].durations.reduce((a, b) => a + b, 0);
+        next.elapsed %= loopDuration;
+      }
+    }
+  }
+  return { playback: next, completed };
+}
+
+const $=id=>document.getElementById(id),KEY='prodifyquest:boss-browser:v1';let model=createBattleDemo();try{const raw=localStorage.getItem(KEY);if(raw)model=restoreBattleModel(JSON.parse(raw))}catch{}
+let slot='weapon',tab='tasks',animation=null,displayHp=model.raid.hp,clock=0,last=null,serial=0;const reduce=matchMedia('(prefers-reduced-motion: reduce)');let paused=reduce.matches;
+const images=new Map();function im(src){if(!images.has(src)){const img=new Image();img.src=src;images.set(src,img)}const img=images.get(src);return img.complete&&img.naturalWidth?img:null}
+function tell(s){$('message').textContent=s}
+function save(next){model=next;try{localStorage.setItem(KEY,JSON.stringify(model));$('save-status').textContent='Saved in this browser'}catch{$('save-status').textContent='Browser storage unavailable; session only'}render()}
+function attempt(fn,msg){try{save(fn(model));tell(msg)}catch(e){tell(e.message)}}
+function animate(hit){if(hit.replayed)return;animation={result:hit.result,elapsed:0,wait:0,impacted:false};displayHp=hit.result.beforeHp;tell(`${hit.result.actorName} is entering the arena…`);render()}
+function impact(){if(animation&&!animation.impacted){animation.impacted=true;displayHp=animation.result.afterHp;tell(`${animation.result.actorName} dealt ${animation.result.damage}${animation.result.critical?' critical':''} damage.${displayHp===0?' Guild victory!':''}`)}}
+function finish(){if(animation){impact();animation=null;displayHp=model.raid.hp;render()}}
+function render(){const b=getBuild(model),busy=Boolean(animation);$('attack-stat').textContent=b.attack;$('crit-stat').textContent=Math.round(b.critChance*100)+'%';$('charges').textContent=model.charges;$('build').textContent=`${b.name} · ${b.rarity} · Level ${b.level} · ${b.normalDamage} normal / ${b.criticalDamage} critical damage`;$('attack').disabled=busy||model.charges<1||model.raid.hp===0;$('attack').textContent=busy?'Attacking…':'Attack boss · 1 charge';$('victory').hidden=model.raid.hp!==0||busy;$('claim').disabled=!!model.raid.reward||!model.raid.contributions.you;$('claim').textContent=model.raid.reward?'Reward claimed':'Claim chest';$('ally').disabled=busy||model.raid.hp===0||!!model.raid.results['ally-2'];$('pause').textContent=paused?'Play motion':'Pause motion';$('pause').disabled=reduce.matches;$('character').value=b.companionId;$('character').disabled=busy;$('coins').textContent=model.wardrobe.coins+' coins · '+model.ownedGearIds.length+' equipment items';
+ $('tasks-panel').hidden=tab!=='tasks';$('inventory-panel').hidden=tab!=='inventory';$('tasks-tab').setAttribute('aria-selected',String(tab==='tasks'));$('inventory-tab').setAttribute('aria-selected',String(tab==='inventory'));
+ $('tasks').replaceChildren(...DEMO_TASKS.map(task=>{const row=document.createElement('div');row.className='task';const txt=document.createElement('span');txt.textContent=task.title;const btn=document.createElement('button'),done=model.completedTaskIds.includes(`${model.raid.id}:${task.id}`);btn.textContent=done?'Done':'+1 charge';btn.disabled=done||busy||model.raid.hp===0;btn.onclick=()=>attempt(m=>completeDemoTask(m,task.id),'Task complete: +1 attack charge.');row.append(txt,btn);return row}));
+ $('contributions').replaceChildren(...Object.entries(model.raid.contributions).map(([id,n])=>{const row=document.createElement('div');row.className='contribution';const name=document.createElement('span'),value=document.createElement('strong');name.textContent=id==='you'?'You':id.replace('ally-','Demo ally ');value.textContent=n+' damage';row.append(name,value);return row}));
+ $('log').replaceChildren(...Object.values(model.raid.results).slice(-5).reverse().map(r=>{const p=document.createElement('p');p.className='log';p.textContent=`${r.actorName} · ${companions[r.companionId].name} · ${r.damage} damage${r.critical?' · Critical!':''}`;return p}));
+ $('slot-tabs').replaceChildren(...GEAR_SLOTS.map(s=>{const btn=document.createElement('button');btn.textContent=s[0].toUpperCase()+s.slice(1);btn.className=s===slot?'primary':'';btn.onclick=()=>{slot=s;render()};return btn}));
+ $('gear').replaceChildren(...GEAR.filter(g=>g.slot===slot).map(item=>{const owned=model.ownedGearIds.includes(item.id),equipped=model.equippedGear[slot]===item.id;const box=document.createElement('div');box.className='item'+(equipped?' equipped':'');const heading=document.createElement('div');heading.className='item-heading';const name=document.createElement('strong'),rarity=document.createElement('span');name.textContent=item.name;rarity.textContent=item.rarity;rarity.className='rarity';heading.append(name,rarity);const stats=document.createElement('p'),status=document.createElement('p');stats.textContent=gearSummary(item);status.className='fine';status.textContent=owned?'In inventory':item.unlock==='shop'?item.price+' coins':'Boss chest · '+item.weight+'%';box.append(heading,stats,status);if(owned||item.unlock==='shop'){const btn=document.createElement('button');btn.className='primary';btn.disabled=busy||equipped;btn.textContent=equipped?'Equipped':owned?'Equip':'Buy · '+item.price;btn.onclick=()=>attempt(m=>owned?equipGear(m,item.id):buyGear(m,item.id),owned?item.name+' equipped.':item.name+' added to inventory.');box.append(btn)}return box}));
+}
+COMPANION_DEFINITIONS.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.name+' · '+c.rarity;$('character').append(o)});
+$('character').onchange=e=>attempt(m=>({...m,wardrobe:{...m.wardrobe,equipped:{...m.wardrobe.equipped,companionId:e.target.value}}}),'Companion equipped.');
+$('tasks-tab').onclick=()=>{tab='tasks';render()};$('inventory-tab').onclick=()=>{tab='inventory';render()};
+$('attack').onclick=()=>{if(animation)return;try{const hit=attackBoss(model,{attackId:`attack-${Date.now()}-${++serial}`,raidId:model.raid.id,roll:Math.random()});save(hit.model);animate(hit)}catch(e){tell(e.message)}};
+$('ally').onclick=()=>{if(animation)return;try{const hit=simulateGuildHit(model);save(hit.model);animate(hit)}catch(e){tell(e.message)}};
+$('claim').onclick=()=>{try{const r=claimBossLoot(model,Math.random());save(r.model);tell(r.replayed?'Reward already claimed.':r.reward.type==='gear'?r.reward.name+' added to inventory!':`Duplicate ${r.reward.name}: +${r.reward.coins} coins.`)}catch(e){tell(e.message)}};
+$('next').onclick=()=>{try{save(nextDemoRaid(model));displayHp=model.raid.hp;tell('A new demo boss event is ready.')}catch(e){tell(e.message)}};
+$('pause').onclick=()=>{paused=!paused;if(paused)finish();render()};reduce.addEventListener('change',()=>{paused=reduce.matches;if(paused)finish();render()});document.addEventListener('visibilitychange',()=>{last=null;if(document.hidden)finish()});
+function frameAt(t,ds,loop){const total=ds.reduce((a,b)=>a+b,0);let x=loop?t%total:Math.min(t,total-1),i=0;while(i<ds.length-1&&x>=ds[i]){x-=ds[i];i++}return i}
+const ctx=$('arena').getContext('2d');const BA={idle:{row:0,times:[650,550,650]},enraged:{row:1,times:[320,340,380]},hit:{row:2,times:[160,220,300]},defeat:{row:3,times:[300,400,900]}};
+function tick(now){let dt=last==null?0:Math.min(100,now-last);last=now;if(paused||reduce.matches||document.hidden)dt=0;clock+=dt;const W=720,H=540,bossSize=W*.43,footY=H*.70,heroW=W*.66,sc=heroW/368;ctx.clearRect(0,0,W,H);const bg=im('assets/arena/forest.png');if(bg)ctx.drawImage(bg,0,0,W,H);let state=displayHp===0?'defeat':displayHp/BOSS.maxHp<=BOSS.enrageAt?'enraged':'idle',bossTime=clock;
+ let heroImage=null;if(animation){heroImage=im(`wardrobe/companions/assets/${animation.result.companionId}/atlas.png`);animation.wait+=dt;if(paused||reduce.matches||animation.wait>8000)finish();else if(heroImage){animation.elapsed+=dt;if(animation.elapsed>=920)impact();if(animation.elapsed>=2700)finish()}}
+ if(animation&&animation.elapsed>=920){state=animation.result.afterHp===0?'defeat':animation.elapsed<1700?'hit':animation.result.afterHp/BOSS.maxHp<=BOSS.enrageAt?'enraged':'idle';bossTime=animation.elapsed-920}
+ const b=im('assets/boss/atlas.png'),a=BA[state],bf=displayHp===0&&!animation?2:frameAt(bossTime,a.times,state==='idle'||state==='enraged');if(b){ctx.imageSmoothingEnabled=false;ctx.drawImage(b,bf*192,a.row*192,192,192,W*.77-bossSize*.5,footY-bossSize*.96,bossSize,bossSize)}
+ if(animation&&heroImage){const t=animation.elapsed;let pose={animation:'idle',frame:frameAt(clock,ANIMATIONS.idle.durations,true)};if(t>=260&&t<1620)pose={animation:'attack',frame:frameAt(t-260,ANIMATIONS.attack.durations,false)};ctx.globalAlpha=t<230?t/230:t>2450?Math.max(0,1-(t-2450)/220):1;const enter=t<230?-40*(1-t/230):0;ctx.drawImage(heroImage,pose.frame*368,ANIMATIONS[pose.animation].row*256,368,256,W*.19-136*sc+enter,footY-228*sc,heroW,256*sc);ctx.globalAlpha=1;
+ if(t>=700&&t<920){ctx.fillStyle='#d7beff';ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(W*.35+(t-700)/220*W*.41,footY-bossSize*.44,10,0,Math.PI*2);ctx.fill();ctx.stroke()}
+ if(t>=920&&t<1700){ctx.font='bold 30px system-ui';ctx.textAlign='center';ctx.lineWidth=4;ctx.strokeStyle='#362344';ctx.fillStyle='#fff4b3';const text=(animation.result.critical?'CRIT! ':'')+'-'+animation.result.damage,y=footY-bossSize*.7-Math.min(40,(t-920)/16);ctx.strokeText(text,W*.77,y);ctx.fillText(text,W*.77,y)}
+ }
+ if(displayHp===0){ctx.fillStyle='#2f392bdc';ctx.fillRect(230,470,260,42);ctx.fillStyle='#fff3b6';ctx.font='bold 20px system-ui';ctx.textAlign='center';ctx.fillText('GUILD VICTORY',360,498)}
+ $('hp-text').textContent=`${displayHp} / ${BOSS.maxHp} HP`;$('hp').value=displayHp;requestAnimationFrame(tick)
+}
+render();tell('Complete a sample task, then press Attack boss.');$('save-status').textContent='Local browser demo';requestAnimationFrame(tick);
+})();
+</script></body></html>

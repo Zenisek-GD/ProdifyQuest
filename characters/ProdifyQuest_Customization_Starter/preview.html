@@ -1,0 +1,371 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ProdifyQuest · Companion wardrobe</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f6f3fb;color:#342844;font:15px/1.5 system-ui,-apple-system,sans-serif}main{max-width:1100px;margin:auto;padding:30px 24px}header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:30px}.brand{font-size:12px;letter-spacing:2px;font-weight:800;color:#8255c1}.meta{font-size:12px;color:#8b799e}h1{font-size:38px;line-height:1.1;letter-spacing:-1.3px;margin:12px 0}h2{font-size:19px;margin:0 0 12px}p{color:#8a7799;margin:8px 0}.layout{display:grid;grid-template-columns:1.05fr 1fr;gap:32px}.stage{background:#e8e0f2;border-radius:22px;overflow:hidden;aspect-ratio:4/3}canvas{display:block;width:100%;height:100%}.stage-name{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.badge{font-size:10px;letter-spacing:1px;color:#8155be;font-weight:800}button,select{font:inherit}button{border:0;border-radius:10px;background:#ede6f7;color:#715099;min-height:42px;padding:10px 14px;cursor:pointer}button:hover{background:#e1d3f2}button:focus-visible,select:focus-visible{outline:3px solid #ba94ef;outline-offset:3px}button:disabled{opacity:.45;cursor:default}.primary{background:#8053be;color:white}.primary:hover{background:#7144ae}.row{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}.tabs{display:flex;gap:8px;border-bottom:1px solid #ddd0eb;margin-bottom:18px}.tabs button{border-radius:0;background:none;border-bottom:3px solid transparent;padding:12px 15px;color:#9a88a9}.tabs button[aria-selected=true]{border-color:#9768d1;color:#7147a9;font-weight:700}.items{display:grid;grid-template-columns:1fr 1fr;gap:12px}.item{text-align:left;background:white;padding:0;border:2px solid #e5ddee;border-radius:15px;overflow:hidden}.item[aria-pressed=true]{border-color:#a374dd}.item img{width:100%;height:122px;object-fit:contain;background:#eee6f9;display:block}.item.background img{object-fit:cover}.item.aura img{background:#302943}.item-body{padding:11px 13px}.name{display:block;font-weight:700;color:#47315f}.detail{font-size:11px;display:block;color:#927caa;margin-top:3px}.unlock{display:block;font-size:12px;color:#8654bf;font-weight:600;margin-top:5px}.description{margin-top:16px;min-height:72px}#message{font-size:13px;min-height:42px;color:#79598f}.favorites{margin-top:25px;border-top:1px solid #e5dbed;padding-top:20px}.favorite{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:9px 0}.favorite span{flex:1;font-size:13px}.favorite button{font-size:12px;padding:8px 12px}label{display:block;font-size:12px;color:#846a98;margin:14px 0 6px}select{width:100%;padding:12px;border:1px solid #e0d3ed;border-radius:10px;background:white;color:#5b4076}summary{cursor:pointer;color:#78509f}details{margin-top:30px;padding-top:18px;border-top:1px solid #e3d7ee}.fine{font-size:12px}.toggle{margin-left:auto}footer{margin-top:34px;font-size:12px;color:#9d8aa9}a{color:#8151bd}@media(max-width:750px){main{padding:22px 16px}.layout{grid-template-columns:1fr;gap:26px}h1{font-size:33px}header{align-items:flex-start}.meta{text-align:right;max-width:120px}}
+</style></head><body><main><header><div><div class="brand">PRODIFYQUEST</div><h1>Make it yours.</h1><p>A little personality for every quest.</p></div><div class="meta">COMPANION WARDROBE<br><span id="wallet"></span></div></header>
+<div class="layout"><section><div class="stage-name"><strong id="companion-name"></strong><span class="badge" id="equipped-label">EQUIPPED</span></div><div class="stage"><canvas id="scene" width="720" height="540" role="img" aria-label="Animated preview of your companion, background, pet and aura"></canvas></div><div class="row"><button data-action="wave">Wave</button><button data-action="study" id="study">Study</button><button data-action="celebrate">Celebrate</button><button data-action="attack">Attack</button><button id="pause" class="toggle">Pause</button></div><label for="companion">Preview a companion</label><select id="companion"></select><div class="row"><button class="primary" id="equip">Equip look</button><button id="reset">Reset preview</button></div><p id="message" aria-live="polite"></p><div class="favorites"><h2>Favorite looks</h2><div id="favorites"></div></div></section>
+<section><div class="tabs" role="tablist" aria-label="Customization category"><button data-category="background" role="tab" aria-selected="true">Scenes</button><button data-category="pet" role="tab" aria-selected="false">Pets</button><button data-category="aura" role="tab" aria-selected="false">Auras</button></div><div id="none-row" class="row" hidden><button id="none">None</button></div><div class="items" id="items"></div><div id="description" class="description"></div><details><summary>Try rewards (offline demo)</summary><p class="fine">All companions are available to preview. Cosmetics use the sample shop, level and chest rules.</p><div class="row"><button id="level">Next milestone</button><button id="chest">Open boss chest</button><button id="victory">New demo victory</button></div><p class="fine">Starfall 50% · Ember Drake 35% · Arcane Halo 15%. Duplicates award coins.</p><p class="fine" id="saved"></p></details></section></div><footer>This offline demo saves only in this browser. <a href="README.md">Expo setup guide</a></footer></main>
+<script>
+'use strict';
+(function(){
+// Edit prices, levels, chest weights and duplicate compensation here.
+const COMPANION_DEFINITIONS = [
+  {
+    "id": "apprentice-mage",
+    "name": "Apprentice Mage",
+    "rarity": "Common",
+    "accent": "#7951d4",
+    "unlock": {
+      "type": "starter"
+    },
+    "description": "Your original fire-magic study companion."
+  },
+  {
+    "id": "sprout-ranger",
+    "name": "Sprout Ranger",
+    "rarity": "Common",
+    "accent": "#4f916a",
+    "unlock": {
+      "type": "shop",
+      "coins": 400
+    },
+    "description": "A cheerful young forest ranger with warm tan skin, short auburn hair, a pointed forest-green hood, leaf-shaped shoulder cape, moss tunic, tan belt and brown boots. Small wooden shortbow carried at the side, tiny emerald leaf brooch. Compact human chibi silhouette.",
+    "attack": "charges a glowing green leaf in one palm and releases a short emerald leaf dart toward the right; keep the full ranger present in every frame"
+  },
+  {
+    "id": "copper-knight",
+    "name": "Copper Knight",
+    "rarity": "Common",
+    "accent": "#ba774a",
+    "unlock": {
+      "type": "shop",
+      "coins": 600
+    },
+    "description": "A friendly little knight in rounded burnished copper armor, a copper helmet with an open face showing warm brown skin and kind eyes, a bright turquoise scarf, small round copper shield, chunky boots. A short simple sword; approachable and cute, no realistic violence.",
+    "attack": "raises the short sword, performs one small rightward sword swipe with a short pale gold arc, then recovers; all poses fully visible"
+  },
+  {
+    "id": "sun-cleric",
+    "name": "Sun Cleric",
+    "rarity": "Uncommon",
+    "accent": "#d6a539",
+    "unlock": {
+      "type": "shop",
+      "coins": 900
+    },
+    "description": "A kind chibi healer with deep brown skin, dark curly hair in two small round puffs, ivory robe with saffron-yellow trim, small golden sun pendant and sunflower-colored short cape, brown shoes. Holds a tiny floating warm golden light in one hand; no large staff.",
+    "attack": "gathers a compact golden sunlight orb, extends hand to pulse a small golden sun spell toward the right, then recovers"
+  },
+  {
+    "id": "frost-scholar",
+    "name": "Frost Scholar",
+    "rarity": "Rare",
+    "accent": "#669bc6",
+    "unlock": {
+      "type": "level",
+      "level": 10
+    },
+    "description": "A studious chibi ice mage with warm light skin, short silver-white bob hair, blue round spectacles, midnight-blue scholar cap with a tiny pale blue crystal, powder-blue coat, white fur collar, navy leggings and boots. Small icy-blue crystal near one palm.",
+    "attack": "charges a tiny cyan crystal and releases a compact ice star toward the right before recovering"
+  },
+  {
+    "id": "storm-runner",
+    "name": "Storm Runner",
+    "rarity": "Rare",
+    "accent": "#855dd2",
+    "unlock": {
+      "type": "level",
+      "level": 20
+    },
+    "description": "An energetic chibi adventurer with deep brown skin, short fluffy white hair, purple headband with tiny yellow lightning emblem, violet short jacket, navy trousers, golden gloves and dark high-top boots. Compact yellow sparks near one glove; no huge weapons.",
+    "attack": "crouches slightly, charges one golden glove, punches forward with a short yellow lightning burst toward the right, then returns to the same spot"
+  },
+  {
+    "id": "moon-bard",
+    "name": "Moon Bard",
+    "rarity": "Epic",
+    "accent": "#9570be",
+    "unlock": {
+      "type": "level",
+      "level": 30
+    },
+    "description": "A dreamy chibi musician with warm tan skin, lavender bob hair, navy beret with tiny silver crescent pin, midnight-blue cape with pale lavender lining, lavender tunic and dark boots. Holds a very small golden-brown lute against torso; sweet friendly eyes.",
+    "attack": "strums the little lute to send two small lilac musical notes toward the right, then lowers arms to recover"
+  },
+  {
+    "id": "clockwork-scribe",
+    "name": "Clockwork Scribe",
+    "rarity": "Epic",
+    "accent": "#a58050",
+    "unlock": {
+      "type": "level",
+      "level": 40
+    },
+    "description": "A lovable chibi brass robot scholar, round bronze head with two glowing cyan eyes and a small friendly mouth, tiny copper antenna, navy waistcoat, brass jointed arms, chunky brass boots. Small cream paper tab tucked in belt. No human face, a compact friendly automaton.",
+    "attack": "charges a tiny cyan cog between its brass hands, extends one hand to send a short teal gear bolt to the right, then recovers"
+  },
+  {
+    "id": "prism-fox",
+    "name": "Prism Fox",
+    "rarity": "Rare",
+    "accent": "#539cba",
+    "unlock": {
+      "type": "boss_chest",
+      "weight": 60,
+      "duplicateCoins": 100
+    },
+    "description": "A friendly bipedal chibi magical fox with turquoise fur, a cream muzzle and belly, huge expressive dark eyes, lavender inner ears, one short fluffy tail with lilac tip tucked close to body, tiny purple shoulder cape and small clear crystal pendant. Two paws and two feet, cute compact animal silhouette.",
+    "attack": "cups a tiny rainbow crystal glow between paws, extends paws to send a compact prismatic star to the right, then recovers"
+  },
+  {
+    "id": "ember-dragonling",
+    "name": "Ember Dragonling",
+    "rarity": "Epic",
+    "accent": "#d87551",
+    "unlock": {
+      "type": "boss_chest",
+      "weight": 30,
+      "duplicateCoins": 250
+    },
+    "description": "An adorable upright baby dragon with coral-red scales, warm cream belly and muzzle, small golden horns, large dark friendly eyes, two tiny plum-colored bat wings held close, short curled tail kept close, chunky clawed feet. Cute rounded chibi body, tiny navy scarf.",
+    "attack": "inhales slightly, puffs one compact golden-orange flame to the right from its mouth, then closes mouth and recovers; keep the full dragon in EVERY frame"
+  },
+  {
+    "id": "astral-guardian",
+    "name": "Astral Guardian",
+    "rarity": "Legendary",
+    "accent": "#696db9",
+    "unlock": {
+      "type": "boss_chest",
+      "weight": 10,
+      "duplicateCoins": 500
+    },
+    "description": "A majestic but friendly chibi celestial guardian wearing dark indigo armor with thin gold star trim, a rounded indigo helmet with two large glowing cyan friendly eyes, a small gold star on forehead, short ivory cape, chunky armored boots. One small azure star orb floats above palm. No giant halo or wings.",
+    "attack": "gathers an azure star between armored hands, extends one palm releasing a small blue-and-gold star pulse toward the right, then returns to neutral"
+  }
+];
+
+// Sample economy: edit prices, levels and weights here.
+const ITEMS = [
+  { id: 'study-room', name: 'Sunlit Study', category: 'background', rarity: 'Common', description: 'A quiet corner for your next focus session.', unlock: { type: 'starter' } },
+  { id: 'moon-garden', name: 'Moon Garden', category: 'background', rarity: 'Rare', description: 'A peaceful terrace beneath the stars.', unlock: { type: 'shop', coins: 650 } },
+  { id: 'sky-island', name: 'Sky Sanctuary', category: 'background', rarity: 'Epic', description: 'A place above the clouds, earned with progress.', unlock: { type: 'level', level: 20 } },
+  { id: 'mint-slime', name: 'Mint Slime', category: 'pet', rarity: 'Common', description: 'A tiny sprout with a big happy bounce.', unlock: { type: 'starter' } },
+  { id: 'moon-owl', name: 'Moon Owl', category: 'pet', rarity: 'Rare', description: 'Your little late-night study buddy.', unlock: { type: 'level', level: 10 } },
+  { id: 'ember-drake', name: 'Ember Drake', category: 'pet', rarity: 'Epic', description: 'A small dragon who celebrates every win.', unlock: { type: 'boss', weight: 35, duplicateCoins: 200 } },
+  { id: 'leaf-dance', name: 'Leaf Dance', category: 'aura', rarity: 'Uncommon', description: 'Fresh green leaves sway around your companion.', unlock: { type: 'shop', coins: 350 } },
+  { id: 'starfall', name: 'Starfall', category: 'aura', rarity: 'Rare', description: 'A gentle shimmer of gold and lilac.', unlock: { type: 'boss', weight: 50, duplicateCoins: 100 } },
+  { id: 'arcane-halo', name: 'Arcane Halo', category: 'aura', rarity: 'Legendary', description: 'A brilliant ring of celestial magic.', unlock: { type: 'boss', weight: 15, duplicateCoins: 300 } },
+];
+const ITEMS_BY_ID = Object.fromEntries(ITEMS.map(item => [item.id, item]));
+const SLOT_FOR_CATEGORY = { background: 'backgroundId', pet: 'petId', aura: 'auraId' };
+function unlockLabel(item) {
+  const u = item.unlock;
+  if (u.type === 'shop') return `${u.coins} coins`;
+  if (u.type === 'level') return `Level ${u.level}`;
+  if (u.type === 'boss') return 'Boss chest';
+  return 'Starter gift';
+}
+
+
+const COMPANION_IDS = COMPANION_DEFINITIONS.map(c => c.id);
+const DEFAULT_OUTFIT = { companionId: 'frost-scholar', backgroundId: 'study-room', petId: 'mint-slime', auraId: null };
+const STARTER_IDS = ITEMS.filter(i => i.unlock.type === 'starter').map(i => i.id);
+const SLOT_ENTRIES = Object.entries(SLOT_FOR_CATEGORY);
+const unique = values => [...new Set(values)];
+
+function createDemoProfile() {
+  // All companions are available here for compatibility previews. Your production
+  // profile must provide the player's actual ownedCompanionIds.
+  return { schemaVersion: 1, coins: 1600, level: 1, ownedItemIds: [...STARTER_IDS], ownedCompanionIds: [...COMPANION_IDS], equipped: { ...DEFAULT_OUTFIT }, presets: [], claimedRaidIds: [] };
+}
+function validateOutfit(profile, outfit) {
+  if (!outfit || !COMPANION_IDS.includes(outfit.companionId) || !profile.ownedCompanionIds.includes(outfit.companionId)) throw new Error('Unlock this companion before equipping it.');
+  const clean = { companionId: outfit.companionId };
+  for (const [category, slot] of SLOT_ENTRIES) {
+    const id = outfit[slot];
+    if (id == null && category !== 'background') { clean[slot] = null; continue; }
+    const item = ITEMS_BY_ID[id];
+    if (!item || item.category !== category) throw new Error(`Choose a valid ${category}.`);
+    if (!profile.ownedItemIds.includes(id)) throw new Error(`Unlock ${item.name} before equipping this look.`);
+    clean[slot] = id;
+  }
+  return clean;
+}
+function equipOutfit(profile, outfit) { return { ...profile, equipped: validateOutfit(profile, outfit) }; }
+function buyItem(profile, id) {
+  const item = ITEMS_BY_ID[id];
+  if (!item || item.unlock.type !== 'shop') throw new Error('This item cannot be bought in the coin shop.');
+  if (profile.ownedItemIds.includes(id)) throw new Error('You already own this item.');
+  if (!Number.isSafeInteger(profile.coins) || profile.coins < item.unlock.coins) throw new Error('You need more coins for this item.');
+  return { ...profile, coins: profile.coins - item.unlock.coins, ownedItemIds: [...profile.ownedItemIds, id] };
+}
+function grantLevelItems(profile, level) {
+  if (!Number.isSafeInteger(level) || level < profile.level || level < 1) throw new Error('The new level must not be below the current level.');
+  const unlocked = ITEMS.filter(i => i.unlock.type === 'level' && level >= i.unlock.level && !profile.ownedItemIds.includes(i.id));
+  return { profile: { ...profile, level, ownedItemIds: unique([...profile.ownedItemIds, ...unlocked.map(i => i.id)]) }, unlocked };
+}
+function bossOdds() {
+  const pool = ITEMS.filter(i => i.unlock.type === 'boss');
+  const total = pool.reduce((sum, i) => sum + i.unlock.weight, 0);
+  if (!(total > 0) || pool.some(i => !Number.isFinite(i.unlock.weight) || i.unlock.weight <= 0)) throw new Error('Invalid boss reward weights.');
+  return pool.map(item => ({ item, probability: item.unlock.weight / total }));
+}
+function claimCosmeticChest(profile, { raidId, eligible, defeated, randomValue }) {
+  if (typeof raidId !== 'string' || !raidId.trim()) throw new Error('A raid ID is required.');
+  if (!eligible || !defeated) throw new Error('Complete an eligible guild boss victory first.');
+  if (profile.claimedRaidIds.includes(raidId)) return { profile, reward: { type: 'already-claimed' } };
+  if (!Number.isFinite(randomValue) || randomValue < 0 || randomValue >= 1) throw new Error('The random value must be between zero (inclusive) and one (exclusive).');
+  const odds = bossOdds(); let cursor = 0, chosen = odds[odds.length - 1].item;
+  for (const entry of odds) { cursor += entry.probability; if (randomValue < cursor) { chosen = entry.item; break; } }
+  const duplicate = profile.ownedItemIds.includes(chosen.id);
+  return {
+    profile: { ...profile, coins: profile.coins + (duplicate ? chosen.unlock.duplicateCoins : 0), ownedItemIds: duplicate ? profile.ownedItemIds : [...profile.ownedItemIds, chosen.id], claimedRaidIds: [...profile.claimedRaidIds, raidId] },
+    reward: { type: duplicate ? 'coins' : 'item', item: chosen, coins: duplicate ? chosen.unlock.duplicateCoins : 0 },
+  };
+}
+function savePreset(profile, slot, name, outfit) {
+  if (!Number.isInteger(slot) || slot < 0 || slot > 2) throw new Error('Choose favorite slot 1, 2 or 3.');
+  const clean = validateOutfit(profile, outfit);
+  const presets = profile.presets.filter(p => p.slot !== slot);
+  presets.push({ slot, name: String(name || `Favorite ${slot + 1}`).trim().slice(0, 32) || `Favorite ${slot + 1}`, outfit: clean });
+  return { ...profile, presets: presets.sort((a,b) => a.slot - b.slot) };
+}
+function loadPreset(profile, slot) {
+  const preset = profile.presets.find(p => p.slot === slot);
+  if (!preset) throw new Error('Save an outfit in this favorite slot first.');
+  return equipOutfit(profile, preset.outfit);
+}
+function restoreProfile(value) {
+  // Defensive local hydration, NOT a security boundary for real rewards.
+  if (!value || value.schemaVersion !== 1) throw new Error('This saved wardrobe uses an unsupported format.');
+  const base = createDemoProfile();
+  const safeList = (v, allowed) => unique(Array.isArray(v) ? v.filter(x => allowed.includes(x)) : []);
+  const ownedCompanionIds = safeList(value.ownedCompanionIds, COMPANION_IDS);
+  const profile = { ...base,
+    coins: Number.isSafeInteger(value.coins) && value.coins >= 0 ? value.coins : 0,
+    level: Number.isSafeInteger(value.level) && value.level >= 1 ? value.level : 1,
+    ownedItemIds: unique([...STARTER_IDS, ...safeList(value.ownedItemIds, ITEMS.map(i => i.id))]),
+    ownedCompanionIds: ownedCompanionIds.length ? ownedCompanionIds : ['apprentice-mage'],
+    claimedRaidIds: unique(Array.isArray(value.claimedRaidIds) ? value.claimedRaidIds.filter(x => typeof x === 'string' && x.length > 0) : []),
+    presets: [],
+  };
+  profile.equipped = { ...DEFAULT_OUTFIT, companionId: profile.ownedCompanionIds[0] };
+  try { profile.equipped = validateOutfit(profile, value.equipped); } catch { /* keep safe defaults */ }
+  for (const p of Array.isArray(value.presets) ? value.presets : []) {
+    try { profile.presets = savePreset(profile, p.slot, p.name, p.outfit).presets; } catch { /* ignore unusable preset */ }
+  }
+  return grantLevelItems(profile, profile.level).profile;
+}
+
+// Pure timing logic. No React Native or third-party dependencies.
+const SHEET = { frameWidth: 368, frameHeight: 256, columns: 6, rows: 5 };
+
+const ANIMATIONS = {
+  idle: { row: 0, durations: [600, 220, 140, 260, 220, 640] },
+  wave: { row: 1, durations: [200, 180, 200, 200, 180, 340] },
+  study: { row: 2, durations: [650, 350, 140, 300, 350, 500] },
+  celebrate: { row: 3, durations: [220, 120, 140, 220, 140, 500] },
+  attack: { row: 4, durations: [240, 200, 200, 130, 230, 360] },
+};
+
+const ACTIONS = ['wave', 'celebrate', 'attack'];
+
+function createPlayback(restingState = 'idle') {
+  return { restingState: restingState === 'study' ? 'study' : 'idle', queue: [], frame: 0, elapsed: 0 };
+}
+
+function getPose(playback) {
+  return { animation: playback.queue[0] || playback.restingState, frame: playback.frame };
+}
+
+function startActions(playback, actionOrSequence) {
+  const queue = (Array.isArray(actionOrSequence) ? [...actionOrSequence] : [actionOrSequence]).map(action => action === 'cast' ? 'attack' : action);
+  if (!queue.length || queue.some(action => !ACTIONS.includes(action))) {
+    throw new Error('Companion.play expects wave, celebrate, attack, or an array of these actions.');
+  }
+  // A new call deliberately replaces the current action sequence.
+  return { ...playback, queue, frame: 0, elapsed: 0 };
+}
+
+function setRestingState(playback, restingState) {
+  const next = restingState === 'study' ? 'study' : 'idle';
+  if (next === playback.restingState) return playback;
+  if (!playback.queue.length) return createPlayback(next);
+  return { ...playback, restingState: next };
+}
+
+function advancePlayback(playback, deltaMs) {
+  if (!Number.isFinite(deltaMs) || deltaMs < 0) {
+    throw new Error('deltaMs must be a finite, non-negative number.');
+  }
+  const next = { ...playback, queue: [...playback.queue], elapsed: playback.elapsed + deltaMs };
+  const completed = [];
+  for (;;) {
+    const animation = next.queue[0] || next.restingState;
+    const durations = ANIMATIONS[animation].durations;
+    if (next.elapsed < durations[next.frame]) break;
+    next.elapsed -= durations[next.frame];
+    next.frame += 1;
+    if (next.frame === durations.length) {
+      next.frame = 0;
+      if (next.queue.length) completed.push(next.queue.shift());
+      // Fast-forward complete idle/study loops without creating callbacks.
+      if (!next.queue.length) {
+        const loopDuration = ANIMATIONS[next.restingState].durations.reduce((a, b) => a + b, 0);
+        next.elapsed %= loopDuration;
+      }
+    }
+  }
+  return { playback: next, completed };
+}
+
+const $=id=>document.getElementById(id),KEY='prodifyquest-wardrobe-browser-v1';
+let profile=createDemoProfile(),storageFailed=false;
+try{const raw=localStorage.getItem(KEY);if(raw)profile=restoreProfile(JSON.parse(raw))}catch(e){storageFailed=true}
+let preview={...profile.equipped},category='background',resting='idle';
+const reduce=matchMedia('(prefers-reduced-motion: reduce)');let paused=reduce.matches;
+let playback=createPlayback(),petElapsed=0,petHappy=false,time=0,last=null;
+let raidNumber=1+Math.max(0,...profile.claimedRaidIds.map(x=>Number(x.match(/^browser-(\d+)$/)?.[1])||0));
+const imageCache=new Map();
+function getImage(src){if(!imageCache.has(src)){const im=new Image();im.src=src;imageCache.set(src,im)}const im=imageCache.get(src);return im.complete&&im.naturalWidth?im:null}
+function tell(s){$('message').textContent=s}
+function save(next){profile=next;try{localStorage.setItem(KEY,JSON.stringify(profile));storageFailed=false}catch{storageFailed=true}$('saved').textContent=storageFailed?'Browser storage is unavailable; changes last only for this session.':'Saved in this browser.';render()}
+function attempt(fn,message){try{save(fn(profile));tell(message)}catch(e){tell(e.message)}}
+function art(item){return item.category==='pet'?`assets/pets/${item.id}/portrait.png`:`assets/${item.category==='background'?'backgrounds':'auras'}/${item.id}.png`}
+function render(){
+ $('wallet').textContent=`${profile.coins} coins · Level ${profile.level}`;
+ $('companion-name').textContent=COMPANION_DEFINITIONS.find(c=>c.id===preview.companionId).name;
+ $('companion').value=preview.companionId;
+ const dirty=JSON.stringify(preview)!==JSON.stringify(profile.equipped);$('equipped-label').textContent=dirty?'PREVIEW':'EQUIPPED';
+ let valid=true;try{validateOutfit(profile,preview)}catch{valid=false}
+ $('equip').disabled=!valid||!dirty;$('equip').textContent=dirty?'Equip look':'Look equipped';
+ $('none-row').hidden=category==='background';$('none-row').style.display=category==='background'?'none':'flex';
+ $('pause').textContent=paused?'Play':'Pause';$('pause').disabled=reduce.matches;
+ const slot=SLOT_FOR_CATEGORY[category];
+ document.querySelectorAll('[data-category]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.category===category)));
+ $('items').replaceChildren(...ITEMS.filter(i=>i.category===category).map(item=>{const b=document.createElement('button');b.className='item '+category;b.setAttribute('aria-pressed',String(preview[slot]===item.id));const im=document.createElement('img');im.src=art(item);im.alt='';const d=document.createElement('div');d.className='item-body';for(const[cl,txt]of [['name',item.name],['detail',item.rarity],['unlock',profile.ownedItemIds.includes(item.id)?'Owned':unlockLabel(item)]]){const n=document.createElement('span');n.className=cl;n.textContent=txt;d.append(n)}b.append(im,d);b.onclick=()=>{preview={...preview,[slot]:item.id};render()};return b}));
+ const selected=ITEMS_BY_ID[preview[slot]];$('description').replaceChildren();if(selected){const p=document.createElement('p');p.textContent=selected.description;$('description').append(p);if(!profile.ownedItemIds.includes(selected.id)){if(selected.unlock.type==='shop'){const b=document.createElement('button');b.className='primary';b.textContent=`Buy · ${selected.unlock.coins} coins`;b.onclick=()=>attempt(p=>buyItem(p,selected.id),`${selected.name} unlocked. Equip your look when ready.`);$('description').append(b)}else{const p=document.createElement('p');p.className='fine';p.textContent='Unlock through '+unlockLabel(selected).toLowerCase()+'.';$('description').append(p)}}}
+ $('favorites').replaceChildren(...[0,1,2].map(slot=>{const row=document.createElement('div');row.className='favorite';const label=document.createElement('span'),preset=profile.presets.find(p=>p.slot===slot);label.textContent=preset?`${preset.name} · ${COMPANION_DEFINITIONS.find(c=>c.id===preset.outfit.companionId).name}`:`Favorite ${slot+1} · Empty`;const s=document.createElement('button'),w=document.createElement('button');s.textContent='Save';s.disabled=!valid;s.onclick=()=>attempt(p=>savePreset(p,slot,`Favorite ${slot+1}`,preview),'Favorite saved.');w.textContent='Wear';w.disabled=!preset;w.onclick=()=>{try{const n=loadPreset(profile,slot);preview={...n.equipped};save(n);tell('Favorite equipped.')}catch(e){tell(e.message)}};row.append(label,s,w);return row}));
+ $('chest').disabled=profile.claimedRaidIds.includes('browser-'+raidNumber);$('chest').textContent=$('chest').disabled?'Chest claimed':'Open boss chest';
+}
+COMPANION_DEFINITIONS.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.name;$('companion').append(o)});
+$('companion').onchange=e=>{preview={...preview,companionId:e.target.value};playback=createPlayback(resting);render()};
+document.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{category=b.dataset.category;render()});
+$('none').onclick=()=>{preview={...preview,[SLOT_FOR_CATEGORY[category]]:null};render()};
+$('equip').onclick=()=>attempt(p=>equipOutfit(p,preview),'Your new look is equipped.');
+$('reset').onclick=()=>{preview={...profile.equipped};render();tell('Showing your equipped outfit.')};
+$('level').onclick=()=>{const r=grantLevelItems(profile,profile.level<10?10:profile.level+10);save(r.profile);tell(r.unlocked.length?'Unlocked '+r.unlocked.map(i=>i.name).join(' and ')+'!':`Reached level ${profile.level}.`)};
+$('chest').onclick=()=>{try{const r=claimCosmeticChest(profile,{raidId:'browser-'+raidNumber,eligible:true,defeated:true,randomValue:Math.random()});save(r.profile);const reward=r.reward;if(reward.type==='item'){preview={...preview,[SLOT_FOR_CATEGORY[reward.item.category]]:reward.item.id};category=reward.item.category;tell('Unlocked '+reward.item.name+'!');render()}else tell(reward.type==='coins'?`Duplicate ${reward.item.name}: +${reward.coins} coins.`:'Chest already claimed.')}catch(e){tell(e.message)}};
+$('victory').onclick=()=>{if(profile.claimedRaidIds.includes('browser-'+raidNumber)){raidNumber++;render();tell('A new demo boss victory is ready.')}else tell('Open the current chest first.')};
+$('pause').onclick=()=>{paused=!paused;last=null;render()};reduce.addEventListener('change',()=>{paused=reduce.matches;last=null;render()});document.addEventListener('visibilitychange',()=>{last=null});
+document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>{if(b.dataset.action==='study'){resting=resting==='study'?'idle':'study';playback=setRestingState(playback,resting);$('study').textContent=resting==='study'?'Idle':'Study'}else if(!paused&&!reduce.matches){playback=startActions(playback,b.dataset.action);if(b.dataset.action==='celebrate'){petHappy=true;petElapsed=0}}});
+const canvas=$('scene'),ctx=canvas.getContext('2d');
+function draw(now){let dt=last==null?0:Math.min(100,now-last);last=now;if(document.hidden||paused||reduce.matches)dt=0;time+=dt;playback=advancePlayback(playback,dt).playback;petElapsed+=dt;if(petHappy&&petElapsed>=680){petHappy=false;petElapsed=0}const W=720,H=540,footX=W*.47,footY=H*(preview.backgroundId==='sky-island'?.78:.87),cw=W*.92,scale=cw/368,aura=W*.62,ps=W*.26;
+ ctx.clearRect(0,0,W,H);const bg=getImage(`assets/backgrounds/${preview.backgroundId}.png`);if(bg)ctx.drawImage(bg,0,0,W,H);
+ if(preview.auraId){const im=getImage(`assets/auras/${preview.auraId}.png`);if(im){const phase=reduce.matches?.5:(1-Math.cos(time/1600*Math.PI))/2;const sz=aura*(1+phase*.025);ctx.globalAlpha=.64+phase*.21;ctx.drawImage(im,footX-sz/2,footY-aura*.83-(sz-aura)/2,sz,sz);ctx.globalAlpha=1}}
+ const char=getImage(`companions/assets/${preview.companionId}/atlas.png`),pose=getPose(playback);if(char){ctx.imageSmoothingEnabled=false;ctx.drawImage(char,pose.frame*368,ANIMATIONS[pose.animation].row*256,368,256,footX-136*scale,footY-228*scale,cw,256*scale)}
+ if(preview.petId){const im=getImage(`assets/pets/${preview.petId}/atlas.png`),durations=petHappy?[160,200,320]:[1000,220,680];let t=petElapsed%durations.reduce((a,b)=>a+b,0),f=0;while(t>=durations[f]&&f<2){t-=durations[f];f++}if(im)ctx.drawImage(im,f*128,petHappy?128:0,128,128,W*.70,footY-ps*.84,ps,ps)}requestAnimationFrame(draw)
+}
+render();tell('Tap any cosmetic to preview it. Unlock it before equipping.');$('saved').textContent=storageFailed?'Browser storage was unavailable; using a fresh preview session.':'Changes save in this browser.';requestAnimationFrame(draw);
+})();
+</script></body></html>

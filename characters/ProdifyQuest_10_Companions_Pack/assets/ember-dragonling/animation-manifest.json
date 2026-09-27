@@ -1,0 +1,114 @@
+{
+  "id": "ember-dragonling",
+  "name": "Ember Dragonling",
+  "frameWidth": 368,
+  "frameHeight": 256,
+  "columns": 6,
+  "rows": 5,
+  "anchor": {
+    "x": 136,
+    "y": 228
+  },
+  "animations": {
+    "idle": {
+      "row": 0,
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "durationsMs": [
+        600,
+        220,
+        140,
+        260,
+        220,
+        640
+      ],
+      "loop": true
+    },
+    "wave": {
+      "row": 1,
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "durationsMs": [
+        200,
+        180,
+        200,
+        200,
+        180,
+        340
+      ],
+      "loop": false
+    },
+    "study": {
+      "row": 2,
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "durationsMs": [
+        650,
+        350,
+        140,
+        300,
+        350,
+        500
+      ],
+      "loop": true
+    },
+    "celebrate": {
+      "row": 3,
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "durationsMs": [
+        220,
+        120,
+        140,
+        220,
+        140,
+        500
+      ],
+      "loop": false
+    },
+    "attack": {
+      "row": 4,
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "durationsMs": [
+        240,
+        200,
+        200,
+        130,
+        230,
+        360
+      ],
+      "loop": false
+    }
+  }
+}
