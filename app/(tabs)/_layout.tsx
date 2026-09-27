@@ -1,35 +1,16 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+import { Redirect, Slot, useLocalSearchParams } from 'expo-router';
+import { ActivityIndicator, View } from 'react-native';
+import BottomNavigation from '@/components/BottomNavigation';
+import { colors } from '@/components/quest-ui';
+import { useAuth } from '@/context/auth';
+import { CompanionProvider } from '@/context/companion';
+import { BattlePresentationProvider } from '@/context/battle-presentation';
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
-  return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
-    </Tabs>
-  );
+export default function TabsLayout() {
+  const { user, loading } = useAuth();
+  const params = useLocalSearchParams<{ invite?: string }>();
+  const invite = typeof params.invite === 'string' && /^[a-zA-Z0-9]{1,24}$/.test(params.invite) ? params.invite : undefined;
+  if (loading) return <View style={{ flex: 1, justifyContent: 'center' }}><ActivityIndicator color={colors.purple} /></View>;
+  if (!user) return <Redirect href={{ pathname: '/auth/login', params: invite ? { invite } : {} }} />;
+  return <CompanionProvider key={user.id}><BattlePresentationProvider><View style={{ flex: 1, backgroundColor: colors.canvas }}><View style={{ flex: 1 }}><Slot /></View><BottomNavigation /></View></BattlePresentationProvider></CompanionProvider>;
 }

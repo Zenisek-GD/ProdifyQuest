@@ -1,0 +1,10 @@
+export type MageAction = 'wave' | 'celebrate' | 'cast';
+export type RestingState = 'idle' | 'study';
+export type Playback = { restingState: RestingState; queue: MageAction[]; frame: number; elapsed: number };
+export const SHEET: { frameWidth: number; frameHeight: number; columns: number; rows: number };
+export const ANIMATIONS: Record<RestingState | MageAction, { row: number; durations: number[] }>;
+export function createPlayback(restingState?: RestingState): Playback;
+export function getPose(playback: Playback): { animation: RestingState | MageAction; frame: number };
+export function startActions(playback: Playback, actions: MageAction | MageAction[]): Playback;
+export function setRestingState(playback: Playback, resting: RestingState): Playback;
+export function advancePlayback(playback: Playback, delta: number): { playback: Playback; completed: MageAction[] };

@@ -1,0 +1,11 @@
+export type CompanionAction = 'wave' | 'celebrate' | 'attack';
+export type ActionInput = CompanionAction | 'cast';
+export type RestingState = 'idle' | 'study';
+export type Playback = { restingState: RestingState; queue: CompanionAction[]; frame: number; elapsed: number };
+export const SHEET: { frameWidth: number; frameHeight: number; columns: number; rows: number };
+export const ANIMATIONS: Record<RestingState | CompanionAction, { row: number; durations: number[] }>;
+export function createPlayback(restingState?: RestingState): Playback;
+export function getPose(playback: Playback): { animation: RestingState | CompanionAction; frame: number };
+export function startActions(playback: Playback, actions: ActionInput | ActionInput[]): Playback;
+export function setRestingState(playback: Playback, resting: RestingState): Playback;
+export function advancePlayback(playback: Playback, delta: number): { playback: Playback; completed: CompanionAction[] };

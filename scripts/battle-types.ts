@@ -1,0 +1,21 @@
+export type EquipmentSlot = 'weapon' | 'armor' | 'cape' | 'trinket';
+export type EquipmentItem = { id: string; name: string; slot: EquipmentSlot; rarity: string; attack?: number; critChance?: number; critMultiplier?: number; unlock: 'starter' | 'shop' | 'boss'; price?: number; weight?: number; duplicateCoins?: number };
+export type BattleBuild = { companionId: string; name?: string; imagePath?: string; rarity?: string; level: number; attack: number; critChance: number; critMultiplier: number; normalDamage: number; criticalDamage: number };
+export type EquipmentResponse = { items: EquipmentItem[]; ownedItemIds: string[]; equipped: Record<EquipmentSlot, string>; build: BattleBuild; coins: number };
+export type BossCompanion = { id: string; name: string; tier: string; imagePath: string; duplicate: boolean; coins: number; description: string };
+export type ChestItem = { id: string; name: string; duplicate: boolean; coins?: number; description?: string; rarity?: string; slot?: string };
+export type LootOdds = { id: string; name: string; weight: number; duplicateCoins: number };
+export type RaidConfig = { durationDays: number; hpPerParticipant: number; damage: { small: number; medium: number; large: number }; dailyLimit: number; minimumContribution: number; rewardCoins: number; rewardXp: number; rewardCosmetic: string; resetTime: string; spellBonus: number; dailyChargeLimit?: number; rewardCompanions?: LootOdds[] };
+export type Raid = {
+  id: string; guildId: string; bossId?: string; bossName: string; revision?: number; defense?: number; enrageAt?: number;
+  status: 'recruiting' | 'active' | 'defeated' | 'expired'; config: RaidConfig;
+  participants: { uid: string; username: string; damage: number; claimed: boolean }[]; participantCount: number;
+  maxHp: number; hp: number; startedAt: string | null; expiresAt: string | null;
+  recentAttacks: { uid: string; username: string; companion: string; damage: number; bonusDamage: number; critical?: boolean; createdAt: string }[];
+  canJoin: boolean; canStart: boolean; canClaim: boolean;
+  me: { damage: number; dailyDamage: number; charges?: number; dailyCharges?: number; claimed: boolean; companionReward?: BossCompanion | null; gearReward?: ChestItem | null; wardrobeReward?: ChestItem | null } | null;
+};
+export type RaidResponse = { raid: Raid | null; config: RaidConfig; trophies: { raidId: string; bossName: string; defeatedAt: string }[]; pendingRewards: { raidId: string; bossName: string; rewardCoins: number; rewardXp: number }[]; bossGearOdds?: LootOdds[]; bossWardrobeOdds?: LootOdds[]; serverTime: string };
+export type ConfirmedAttack = { attackId: string; raidId: string; companionId: string; imagePath?: string; build: BattleBuild; damage: number; rolledDamage: number; critical: boolean; hpBefore: number; hpAfter: number; defeated: boolean; revision: number; createdAt: string };
+export type AttackResponse = { raid: Raid; attack: ConfirmedAttack; replayed: boolean };
+export type ChestResponse = { raid?: Raid; companionReward?: BossCompanion; gearReward?: ChestItem; wardrobeReward?: ChestItem };

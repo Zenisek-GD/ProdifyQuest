@@ -1,0 +1,58 @@
+import { MaterialIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import React, { PropsWithChildren } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '@/context/auth';
+import { CompanionStatusHeader } from '@/components/companion-status-header';
+import { colors } from '@/components/quest-theme';
+import { useBattlePresentation } from '@/context/battle-presentation';
+
+export { colors } from '@/components/quest-theme';
+type Icon = React.ComponentProps<typeof MaterialIcons>['name'];
+
+export function Screen({ title, subtitle, children, action, onRefresh, refreshing = false, companionHeader, scroll = true }: PropsWithChildren<{ title: string; subtitle?: string; action?: React.ReactNode; onRefresh?: () => void; refreshing?: boolean; companionHeader?: React.ReactNode; scroll?: boolean }>) {
+  const { user } = useAuth();
+  const { busy: battleBusy } = useBattlePresentation();
+  const insets = useSafeAreaInsets();
+  const heading = <View style={[styles.row, { justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }]}><View style={{ flex: 1, minWidth: 130 }}><Text accessibilityRole="header" style={styles.pageTitle}>{title}</Text>{!!subtitle && <Text style={[styles.body, { marginTop: 4 }]}>{subtitle}</Text>}</View>{action}</View>;
+  return <View style={{ flex: 1, backgroundColor: colors.canvas, paddingTop: insets.top }}>
+    <View style={styles.topbar}><View style={[styles.row, { flex: 1 }]}><View style={styles.brandMark}><MaterialIcons name="auto-awesome" size={22} color="white" /></View><Text style={styles.brand}>ProdifyQuest</Text></View><View style={styles.coin}><MaterialIcons name="monetization-on" size={19} color={colors.amber} /><Text style={{ color: colors.amber, fontWeight: '700' }}>{user?.coins ?? 0}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Open profile" accessibilityState={{ disabled: battleBusy }} disabled={battleBusy} onPress={() => router.push('/(tabs)/profile')} style={styles.avatar}><Text style={{ color: colors.purple, fontWeight: '800' }}>{user?.username?.slice(0, 1).toUpperCase() || 'P'}</Text></Pressable></View>
+    {companionHeader ?? <CompanionStatusHeader />}
+    {scroll ? <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.page} refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.purple} /> : undefined}>
+      {heading}
+      {children}
+    </ScrollView> : <View style={[styles.page, { flex: 1, minHeight: 0, paddingBottom: 12 }]}>{heading}{children}</View>}
+  </View>;
+}
+
+export function Panel({ children, style }: PropsWithChildren<{ style?: ViewStyle }>) { return <View style={[styles.panel, style]}>{children}</View>; }
+export function Heading({ children }: PropsWithChildren) { return <Text accessibilityRole="header" style={styles.heading}>{children}</Text>; }
+export function Copy({ children }: PropsWithChildren) { return <Text style={styles.body}>{children}</Text>; }
+export function Action({ label, icon, onPress, variant = 'primary', disabled, busy, small }: { label: string; icon?: Icon; onPress: () => void; variant?: 'primary' | 'secondary' | 'danger' | 'ghost'; disabled?: boolean; busy?: boolean; small?: boolean }) {
+  const foreground = variant === 'primary' ? '#FFF' : variant === 'danger' ? colors.red : colors.purple;
+  return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: disabled || busy, busy }} disabled={disabled || busy} onPress={onPress} style={({ pressed }) => [styles.button, { backgroundColor: variant === 'primary' ? colors.purple : variant === 'danger' ? '#FCEEF1' : variant === 'ghost' ? 'transparent' : colors.pale, opacity: disabled || busy ? 0.5 : pressed ? 0.8 : 1, paddingVertical: small ? 9 : 12, paddingHorizontal: small ? 12 : 18 }]}>{busy ? <ActivityIndicator size="small" color={foreground} /> : icon ? <MaterialIcons name={icon} size={small ? 17 : 20} color={foreground} /> : null}<Text style={{ color: foreground, fontWeight: '700', fontSize: small ? 12 : 14, flexShrink: 1 }}>{label}</Text></Pressable>;
+}
+export function Field({ label, ...props }: TextInputProps & { label: string }) { return <View style={{ gap: 7 }}><Text style={styles.label}>{label}</Text><TextInput accessibilityLabel={label} placeholderTextColor="#A5A0B4" {...props} style={[styles.input, props.multiline && { minHeight: 86, textAlignVertical: 'top' }, props.style]} /></View>; }
+export function Choice({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) { return <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress} style={[styles.choice, selected && { backgroundColor: colors.purple, borderColor: colors.purple }]}><Text style={{ color: selected ? 'white' : colors.muted, fontSize: 12, fontWeight: '600' }}>{label}</Text></Pressable>; }
+export function Badge({ children, tone = 'purple' }: PropsWithChildren<{ tone?: 'purple' | 'green' | 'amber' | 'red' | 'neutral' }>) { const palette = { purple: [colors.pale, colors.purple], green: ['#E9F6F0', colors.green], amber: ['#FCF4E5', colors.amber], red: ['#FCEEF1', colors.red], neutral: ['#F1F0F5', colors.muted] }[tone]; return <View style={{ maxWidth: '100%', alignSelf: 'flex-start', paddingHorizontal: 9, paddingVertical: 5, borderRadius: 7, backgroundColor: palette[0] }}><Text style={{ fontSize: 11, fontWeight: '700', color: palette[1] }}>{children}</Text></View>; }
+export function Stat({ label, value, icon, tone = colors.purple }: { label: string; value: string | number; icon: Icon; tone?: string }) { return <Panel style={{ flexGrow: 1, flexBasis: 140, gap: 10 }}><View style={[styles.row, { justifyContent: 'space-between' }]}><Text style={styles.label}>{label}</Text><MaterialIcons name={icon} size={21} color={tone} /></View><Text style={{ color: colors.ink, fontSize: 29, fontWeight: '800' }}>{value}</Text></Panel>; }
+export function ErrorNotice({ message, onRetry }: { message?: string | null; onRetry?: () => void }) { if (!message) return null; return <View accessibilityRole="alert" style={styles.error}><MaterialIcons name="error-outline" color={colors.red} size={20} /><Text style={{ color: colors.red, lineHeight: 20, flex: 1 }}>{message}</Text>{onRetry && <Action label="Retry" variant="danger" small onPress={onRetry} />}</View>; }
+export function Loading() { return <View style={{ padding: 50, alignItems: 'center', gap: 12 }}><ActivityIndicator color={colors.purple} /><Copy>Loading your quest…</Copy></View>; }
+export function Empty({ icon = 'auto-awesome', title, message, action }: { icon?: Icon; title: string; message: string; action?: React.ReactNode }) { return <Panel style={{ paddingVertical: 40, alignItems: 'center', gap: 12 }}><View style={[styles.brandMark, { width: 54, height: 54, borderRadius: 18, backgroundColor: colors.pale }]}><MaterialIcons name={icon} size={27} color={colors.purple} /></View><Heading>{title}</Heading><Text style={[styles.body, { textAlign: 'center', maxWidth: 420 }]}>{message}</Text>{action}</Panel>; }
+export function Dialog({ visible, title, children, onClose, busy = false }: PropsWithChildren<{ visible: boolean; title: string; onClose: () => void; busy?: boolean }>) {
+  return <Modal visible={visible} animationType="fade" transparent onRequestClose={() => !busy && onClose()}><KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.overlay}><View accessibilityViewIsModal style={styles.dialog}><View style={[styles.row, { justifyContent: 'space-between', padding: 22, borderBottomWidth: 1, borderColor: colors.border }]}><Heading>{title}</Heading><Pressable accessibilityRole="button" accessibilityLabel="Close dialog" onPress={onClose} disabled={busy} style={{ padding: 7 }}><MaterialIcons name="close" size={22} color={colors.muted} /></Pressable></View><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 22, gap: 18 }}>{children}</ScrollView></View></KeyboardAvoidingView></Modal>;
+}
+export function Confirm({ visible, title, message, label = 'Confirm', busy, error, onConfirm, onClose, danger }: { visible: boolean; title: string; message: string; label?: string; busy: boolean; error?: string; onConfirm: () => void; onClose: () => void; danger?: boolean }) { return <Dialog visible={visible} title={title} onClose={onClose} busy={busy}><Copy>{message}</Copy><ErrorNotice message={error} /><View style={[styles.row, { justifyContent: 'flex-end', flexWrap: 'wrap' }]}><Action label="Cancel" variant="secondary" onPress={onClose} disabled={busy} /><Action label={label} variant={danger ? 'danger' : 'primary'} busy={busy} onPress={onConfirm} /></View></Dialog>; }
+export function dateLabel(value?: string | null) { if (!value) return 'No due date'; const date = new Date(value); return Number.isNaN(date.getTime()) ? 'No due date' : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }); }
+export function momentLabel(value: string) { return new Date(value).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
+
+export const styles = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10 }, wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  topbar: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#FFF', borderBottomWidth: 1, borderColor: colors.border },
+  brandMark: { width: 32, height: 32, backgroundColor: colors.purple, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }, brand: { fontSize: 16, fontWeight: '800', color: colors.ink },
+  coin: { flexDirection: 'row', gap: 5, alignItems: 'center', backgroundColor: '#FCF4E5', paddingHorizontal: 11, paddingVertical: 7, borderRadius: 20 }, avatar: { width: 35, height: 35, alignItems: 'center', justifyContent: 'center', borderRadius: 18, backgroundColor: colors.pale },
+  page: { width: '100%', maxWidth: 1000, alignSelf: 'center', padding: 16, paddingTop: 18, gap: 18, paddingBottom: 28 }, pageTitle: { color: colors.ink, fontSize: 24, fontWeight: '800', letterSpacing: -0.5 }, heading: { color: colors.ink, fontSize: 17, fontWeight: '700' }, body: { color: colors.muted, fontSize: 14, lineHeight: 21 }, label: { color: colors.muted, fontSize: 12, fontWeight: '600' },
+  panel: { backgroundColor: '#FFF', borderWidth: 1, borderColor: colors.border, borderRadius: 14, padding: 16, gap: 12 }, button: { maxWidth: '100%', flexShrink: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 10, minHeight: 42 }, input: { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#DDD7EC', borderRadius: 10, paddingHorizontal: 13, paddingVertical: 12, fontSize: 14, color: colors.ink, minHeight: 46 }, choice: { maxWidth: '100%', paddingVertical: 10, paddingHorizontal: 13, borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: '#FFF' },
+  error: { backgroundColor: '#FCEEF1', borderRadius: 12, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 10 }, overlay: { flex: 1, backgroundColor: '#20162C99', alignItems: 'center', justifyContent: 'center', padding: 20 }, dialog: { width: '100%', maxWidth: 560, maxHeight: '90%', backgroundColor: '#FFF', borderRadius: 20, overflow: 'hidden' }, footer: { color: '#A39CAF', fontSize: 11, textAlign: 'center', marginTop: 10 },
+});
