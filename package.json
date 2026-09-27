@@ -12,6 +12,8 @@
     "test:auth": "node --test tests/auth-session.test.cjs",
     "test": "node --test tests/*.test.cjs",
     "build:web": "expo export --platform web",
+    "check:api": "node scripts/check-deployment.cjs",
+    "eas-build-pre-install": "node scripts/check-deployment.cjs",
     "lint": "eslint ."
   },
   "dependencies": {
